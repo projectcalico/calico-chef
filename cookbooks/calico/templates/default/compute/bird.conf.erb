@@ -1,0 +1,45 @@
+router id <%= node[:ipaddress] %>;
+
+filter import_kernel {
+if ( net != 0.0.0.0/0 ) then {
+   accept;
+   }
+   reject;
+}
+
+# Configure synchronization between BIRD's routing tables and the
+# kernel.
+protocol kernel {
+  learn;          # Learn all alien routes from the kernel
+  persist;        # Don't remove routes on bird shutdown
+  scan time 2;    # Scan kernel routing table every 20 seconds
+  device routes;
+  import filter import_kernel;
+  export all;     # Default is export none
+}
+
+# Watch interface up/down events.
+protocol device {
+  scan time 2;    # Scan interfaces every 10 seconds
+}
+
+protocol direct {
+   debug all;
+   interface "-dummy0", "dummy1", "eth0";
+}
+
+# Peer with all neighbours.
+<% @bgp_neighbors.each do |n| %>
+protocol bgp <%= n[:fqdn] %> {
+  description "Connection to BGP route reflector";
+  local as 64511;
+  neighbor <%= n[:ipaddress] %> as 64511;
+  multihop;
+  import all;
+  export all;
+  next hop self;    # Disable next hop processing and always advertise our
+                    # local address as nexthop
+  source address <%= node[:ipaddress] %>;  # The local address we use for the TCP connection
+}
+
+<% end %>

@@ -1,0 +1,28 @@
+[DEFAULT]
+glance_host = <%= node[:fqdn] %>
+auth_strategy = keystone
+rabbit_host = <%= node[:fqdn] %>
+rabbit_password = <%= @admin_password %>
+rootwrap_config = /etc/cinder/rootwrap.conf
+api_paste_confg = /etc/cinder/api-paste.ini
+iscsi_helper = tgtadm
+volume_name_template = volume-%s
+volume_group = cinder-volumes
+verbose = True
+debug = True
+state_path = /var/lib/cinder
+lock_path = /var/lock/cinder
+volumes_dir = /var/lib/cinder/volumes
+
+[database]
+connection = mysql://cinder:<%= @admin_password %>@<%= node[:fqdn] %>/cinder
+
+[keystone_authtoken]
+auth_uri = http://<%= node[:fqdn] %>:5000
+auth_host = <%= node[:fqdn] %>
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = cinder
+admin_password = <%= @admin_password %>
+
