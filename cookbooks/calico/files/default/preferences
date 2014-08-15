@@ -1,4 +1,0 @@
-Package: *
-Pin: origin binaries.projectcalico.org
-Pin-Priority: 1001
-

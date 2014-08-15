@@ -5,24 +5,30 @@ controller = search(:node, "role:controller")[0][:fqdn]
 bgp_neighbors = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
 
 # Tell apt about the Calico repository server.
-cookbook_file "/etc/apt/sources.list.d/calico.list" do
+template "/etc/apt/sources.list.d/calico.list" do
     mode "0644"
-    source "calico.list"
+    source "calico.list.erb"
     owner "root"
     group "root"
+    variables({
+        package_source: node[:calico][:package_source],
+    })
     notifies :run, "execute[apt-key-calico]", :immediately
 end
 execute "apt-key-calico" do
     user "root"
-    command "curl -L http://binaries.projectcalico.org/repo/key | sudo apt-key add -"
+    command "curl -L #{node[:calico][:package_key]} | sudo apt-key add -"
     action :nothing
     notifies :run, "execute[apt-get update]", :immediately
 end
-cookbook_file "/etc/apt/preferences" do
+template "/etc/apt/preferences" do
     mode "0644"
-    source "preferences"
+    source "preferences.erb"
     owner "root"
     group "root"
+    variables({
+        package_host: URI.parse(node[:calico][:package_source].split[0]).host
+    })
 end
 
 # Install a few needed packages.
