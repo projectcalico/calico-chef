@@ -622,6 +622,7 @@ end
 
 package "calico-control" do
     action :install
+    notifies :create, "template[/etc/calico/acl_manager.cfg]", :immediately
 end
 
 cookbook_file "/etc/neutron/plugins/ml2/ml2_conf.ini" do
@@ -632,3 +633,19 @@ cookbook_file "/etc/neutron/plugins/ml2/ml2_conf.ini" do
     notifies :restart, "service[neutron-server]", :immediately
 end
 
+service "calico-acl-manager" do
+    provider Chef::Provider::Service::Upstart
+    supports :restart => true
+    action [:nothing]
+end
+
+template "/etc/calico/acl_manager.cfg" do
+    mode "0644"
+    source "control/acl_manager.cfg.erb"
+    variables({
+        controller: node[:fqdn]
+    })
+    owner "root"
+    group "root"
+    notifies :restart, "service[calico-acl-manager]", :immediately
+end
