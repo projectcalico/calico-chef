@@ -185,6 +185,7 @@ end
 package "calico-compute" do
     action [:install]
     notifies :restart, "service[libvirt-bin]", :delayed
+    notifies :create, "template[/etc/calico/felix.cfg]", :immediately
 end
 
 template "/etc/bird/bird.conf" do
@@ -211,3 +212,19 @@ service "bird" do
     action [:nothing]
 end
 
+service "calico-felix" do
+    provider Chef::Provider::Service::Upstart
+    supports :restart => true
+    action [:nothing]
+end
+
+template "/etc/calico/felix.cfg" do
+    mode "0644"
+    source "compute/felix.cfg.erb"
+    variables({
+        controller: controller
+    })
+    owner "root"
+    group "root"
+    notifies :restart, "service[calico-felix]", :immediately
+end
