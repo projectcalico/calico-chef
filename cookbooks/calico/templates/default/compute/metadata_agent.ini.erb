@@ -4,7 +4,7 @@ auth_region = regionOne
 admin_tenant_name = service
 admin_user = neutron
 admin_password = <%= @admin_password %>
-nova_metadata_ip = controller
+nova_metadata_ip = <%= @controller %>
 metadata_proxy_shared_secret = <%= @admin_password %>
 # Show debugging output in log (sets DEBUG log level output)
 # debug = True
