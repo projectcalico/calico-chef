@@ -18,10 +18,6 @@ LogSeverityScreen = DEBUG
 [connection]
 # Time with no data on a connection after which we give up on the
 # remote entity
-ConnectionTimeoutMillis = 30000
+ConnectionTimeoutMillis = 40000
 # Time between sending of keepalives
 ConnectionKeepaliveIntervalMillis = 2000
-# How far apart out connection retries are. Must always be less than
-# ConnectionTimeoutMillis or two ends of the API can forever fail to
-# connect.
-ConnectionRetryIntervalMillis = 15000
