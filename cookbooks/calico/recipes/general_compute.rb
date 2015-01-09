@@ -48,6 +48,9 @@ end
 package "python-guestfs" do
     action [:install]
 end
+package "nova-api-metadata" do
+    action [:install]
+end
 
 # Mark the kernel world-readable.
 cookbook_file "/etc/kernel/postinst.d/statoverride" do
@@ -89,6 +92,7 @@ template "/etc/nova/nova.conf" do
     group "nova"
     notifies :delete, "file[/var/lib/nova/nova.sqlite]", :immediately
     notifies :restart, "service[nova-compute]", :immediately
+    notifies :restart, "service[nova-api-metadata]", :immediately
 end
 template "/etc/nova/nova-compute.conf" do
     mode "0640"
@@ -123,9 +127,6 @@ end
 package "neutron-dhcp-agent" do
     action [:install]
 end
-package "neutron-metadata-agent" do
-    action [:install]
-end
 
 # Set up the Neutron config file.
 template "/etc/neutron/neutron.conf" do
@@ -140,17 +141,6 @@ template "/etc/neutron/neutron.conf" do
     notifies :restart, "service[neutron-dhcp-agent]", :immediately
 end
 
-template "/etc/neutron/metadata_agent.ini" do
-    mode "0644"
-    source "compute/metadata_agent.ini.erb"
-    variables({
-        admin_password: node[:calico][:admin_password],
-        controller: controller
-    })
-    owner "root"
-    group "neutron"
-    notifies :restart, "service[neutron-metadata-agent]", :immediately
-end
 cookbook_file "/etc/neutron/dhcp_agent.ini" do
     mode "0644"
     source "dhcp_agent.ini"
@@ -160,11 +150,6 @@ end
 
 # Restart relevant services.
 service "neutron-dhcp-agent" do
-    provider Chef::Provider::Service::Upstart
-    supports :restart => true
-    action [:nothing]
-end
-service "neutron-metadata-agent" do
     provider Chef::Provider::Service::Upstart
     supports :restart => true
     action [:nothing]
