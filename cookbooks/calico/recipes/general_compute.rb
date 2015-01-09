@@ -117,6 +117,11 @@ service "nova-compute" do
     action [:nothing]
     notifies :restart, "service[libvirt-bin]", :immediately
 end
+service "nova-api-metadata" do
+    provider Chef::Provider::Service::Upstart
+    supports :restart => true
+    action [:nothing]
+end
 
 
 # NETWORKING
