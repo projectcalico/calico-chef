@@ -496,6 +496,7 @@ bash "basic-networks" do
     environment node["run_env"]
     code <<-EOH
     neutron net-create demo-net --shared
+    neutron net-create demo6-net --shared
     neutron subnet-create demo-net --name demo-subnet \
       --gateway 10.65.0.1 10.65.0.0/16
     neutron subnet-create --ip-version 6 demo6-net --name demo6-subnet \
