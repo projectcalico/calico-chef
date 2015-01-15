@@ -12,12 +12,19 @@
 # Override router ID
 router id <%= node[:ipaddress] %>;
 
+filter import_kernel {
+  if ( net != ::/0 ) then {
+     accept;
+   }
+   reject;
+}
+
 protocol kernel {
         learn;                  # Learn all alien routes from the kernel
         persist;                # Don't remove routes on bird shutdown
         scan time 2;           # Scan kernel routing table every 20 seconds
         device routes;
-#       import none;            # Default is import all
+        import filter import_kernel;
         export all;             # Default is export none
 #       kernel table 5;         # Kernel table to synchronize with (default: main)
 }
