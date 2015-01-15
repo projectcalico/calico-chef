@@ -498,10 +498,11 @@ bash "basic-networks" do
     neutron net-create demo-net --shared
     neutron subnet-create demo-net --name demo-subnet \
       --gateway 10.65.0.1 10.65.0.0/16
+    neutron subnet-create --ip-version 6 demo6-net --name demo6-subnet \
+      --gateway 2001:db8:a41:2::1 2001:db8:a41:2::/64 
     EOH
     not_if "neutron net-list | grep demo-net"
 end
-
 
 # HORIZON
 
