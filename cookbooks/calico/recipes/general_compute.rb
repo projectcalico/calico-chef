@@ -198,6 +198,9 @@ end
 template "/etc/bird/bird6.conf" do
     mode "0640"
     source "compute/bird6.conf.erb"
+    variables({
+        bgp_neighbors: bgp_neighbors
+    })
     owner "bird"
     group "bird"
     notifies :restart, "service[bird6]", :delayed
