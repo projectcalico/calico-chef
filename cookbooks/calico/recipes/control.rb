@@ -643,7 +643,6 @@ end
 
 service "calico-acl-manager" do
     provider Chef::Provider::Service::Upstart
-    supports :restart => true
     action [:nothing]
 end
 
@@ -652,5 +651,5 @@ template "/etc/calico/acl_manager.cfg" do
     source "control/acl_manager.cfg.erb"
     owner "root"
     group "root"
-    notifies :restart, "service[calico-acl-manager]", :immediately
+    notifies :start, "service[calico-acl-manager]", :immediately
 end

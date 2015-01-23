@@ -210,7 +210,6 @@ end
 
 service "calico-felix" do
     provider Chef::Provider::Service::Upstart
-    supports :restart => true
     action [:nothing]
 end
 
@@ -222,5 +221,5 @@ template "/etc/calico/felix.cfg" do
     })
     owner "root"
     group "root"
-    notifies :restart, "service[calico-felix]", :immediately
+    notifies :start, "service[calico-felix]", :immediately
 end
