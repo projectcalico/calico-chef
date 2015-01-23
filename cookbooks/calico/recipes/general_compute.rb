@@ -143,7 +143,7 @@ template "/etc/neutron/neutron.conf" do
     })
     owner "root"
     group "neutron"
-    notifies :restart, "service[neutron-dhcp-agent]", :immediately
+    notifies :restart, "service[neutron-dhcp-agent]", :delayed
 end
 
 cookbook_file "/etc/neutron/dhcp_agent.ini" do
