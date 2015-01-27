@@ -319,6 +319,17 @@ bash "cirros-image" do
     not_if "glance image-list | grep cirros"
 end
 
+bash "ipv6-image" do
+    action [:run]
+    user "root"
+    environment node["run_env"]
+    code <<-EOH
+    wget #{node[:calico][:ipv6_image_url]} -O - | glance image-create --name=ipv6_enabled_image --disk-format=qcow2 \
+      --container-format=bare --is-public=true
+    EOH
+    only_if { node[:calico][:ipv6_image_url].to_s != "" && !system("glance image-list | grep ipv6") }
+end
+
 
 # NOVA
 
