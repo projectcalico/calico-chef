@@ -319,6 +319,17 @@ bash "cirros-image" do
     not_if "glance image-list | grep cirros"
 end
 
+bash "ipv6-image" do
+    action [:run]
+    user "root"
+    environment node["run_env"]
+    code <<-EOH
+    wget #{node[:calico][:ipv6_image_url]} -O - | glance image-create --name=ipv6_enabled_image --disk-format=qcow2 \
+      --container-format=bare --is-public=true
+    EOH
+    only_if { node[:calico][:ipv6_image_url].to_s != "" && !system("glance image-list | grep ipv6") }
+end
+
 
 # NOVA
 
@@ -498,10 +509,11 @@ bash "basic-networks" do
     neutron net-create demo-net --shared
     neutron subnet-create demo-net --name demo-subnet \
       --gateway 10.65.0.1 10.65.0.0/16
+    neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
+      --gateway 2001:db8:a41:2::1 2001:db8:a41:2::/64 
     EOH
     not_if "neutron net-list | grep demo-net"
 end
-
 
 # HORIZON
 
