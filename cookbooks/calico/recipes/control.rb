@@ -506,6 +506,7 @@ bash "basic-networks" do
     user "root"
     environment node["run_env"]
     code <<-EOH
+    sleep 5
     neutron net-create demo-net --shared
     neutron subnet-create demo-net --name demo-subnet \
       --gateway 10.65.0.1 10.65.0.0/16
