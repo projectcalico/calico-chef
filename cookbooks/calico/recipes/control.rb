@@ -501,21 +501,6 @@ service "neutron-server" do
     action [:nothing]
 end
 
-bash "basic-networks" do
-    action [:run]
-    user "root"
-    environment node["run_env"]
-    code <<-EOH
-    sleep 5
-    neutron net-create demo-net --shared
-    neutron subnet-create demo-net --name demo-subnet \
-      --gateway 10.65.0.1 10.65.0.0/16
-    neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
-      --gateway 2001:db8:a41:2::1 2001:db8:a41:2::/64 
-    EOH
-    not_if "neutron net-list | grep demo-net"
-end
-
 # HORIZON
 
 package "apache2" do
@@ -665,4 +650,21 @@ template "/etc/calico/acl_manager.cfg" do
     owner "root"
     group "root"
     notifies :start, "service[calico-acl-manager]", :immediately
+end
+
+
+# DEPLOMENT SPECIFIC CONFIGURATION
+
+bash "basic-networks" do
+    action [:run]
+    user "root"
+    environment node["run_env"]
+    code <<-EOH
+    neutron net-create demo-net --shared
+    neutron subnet-create demo-net --name demo-subnet \
+      --gateway 10.65.0.1 10.65.0.0/16
+    neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
+      --gateway 2001:db8:a41:2::1 2001:db8:a41:2::/64 
+    EOH
+    not_if "neutron net-list | grep demo-net"
 end
