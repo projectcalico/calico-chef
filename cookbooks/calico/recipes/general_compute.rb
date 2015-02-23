@@ -31,7 +31,9 @@ template "/etc/apt/preferences" do
     })
 end
 
-# Configure sysctl so that forwarding is enabled.
+# Configure sysctl so that forwarding is enabled, and router solicitations
+# are accepted.  Allows SLAAC to provide an IPv6 address to each compute
+# node without disabling forwarding. 
 # ipv4.all.forwarding=1: enable IPv4 forwarding.
 # ipv6.all.forwarding=1: enable IPv6 forwarding.
 # ipv6.all.accept_ra=2: allow router solicitations/advertisements.
