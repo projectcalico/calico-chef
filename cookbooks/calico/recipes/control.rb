@@ -28,6 +28,11 @@ template "/etc/apt/preferences" do
         package_host: URI.parse(node[:calico][:package_source].split[0]).host
     })
 end
+apt_repository "calico-ppa" do
+    uri node[:calico][:etcd_ppa]
+    distribution node["lsb"]["codename"]
+    notifies :run, "execute[apt-get update]", :immediately
+end
 
 # Install NTP.
 package "ntp" do
@@ -510,7 +515,7 @@ bash "basic-networks" do
     neutron subnet-create demo-net --name demo-subnet \
       --gateway 10.28.0.1 10.28.0.0/16
     neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
-      --gateway fd5f:5d21:845:1c2e:2::1 fd5f:5d21:845:1c2e:2::/80 
+      --gateway fd5f:5d21:845:1c2e:2::1 fd5f:5d21:845:1c2e:2::/80
     EOH
     not_if "neutron net-list | grep demo-net"
 end
@@ -639,6 +644,10 @@ end
 
 
 # CALICO
+
+package "etcd" do
+    action :install
+end
 
 package "calico-control" do
     action :install

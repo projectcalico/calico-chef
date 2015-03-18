@@ -30,6 +30,11 @@ template "/etc/apt/preferences" do
         package_host: URI.parse(node[:calico][:package_source].split[0]).host
     })
 end
+apt_repository "calico-ppa" do
+    uri node[:calico][:etcd_ppa]
+    distribution node["lsb"]["codename"]
+    notifies :run, "execute[apt-get update]", :immediately
+end
 
 # Install a few needed packages.
 package "ntp" do
@@ -176,6 +181,11 @@ package "bird" do
     action [:install]
     notifies :create, "template[/etc/bird/bird.conf]", :immediately
     notifies :create, "template[/etc/bird/bird6.conf]", :immediately
+end
+
+# Install python-etcd.
+package "python-etcd" do
+    action :install
 end
 
 package "calico-compute" do
