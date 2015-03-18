@@ -648,6 +648,18 @@ end
 package "etcd" do
     action :install
 end
+template "/etc/init/etcd.conf" do
+    mode "0640"
+    source "control/etcd.conf.erb"
+    owner "root"
+    group "root"
+    notifies :restart, "service[etcd]", :immediately
+end
+service "etcd" do
+    provider Chef::Provider::Service::Upstart
+    supports :restart => true
+    action [:nothing]
+done
 
 package "calico-control" do
     action :install

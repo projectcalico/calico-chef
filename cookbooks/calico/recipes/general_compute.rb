@@ -1,5 +1,6 @@
 # Find the controller hostname.
 controller = search(:node, "role:controller")[0][:fqdn]
+controller_ip = search(:node, "role:controller")[0][:ipaddress]
 
 # Find the BGP neighbors, which is everyone except ourselves.
 bgp_neighbors = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
@@ -183,10 +184,29 @@ package "bird" do
     notifies :create, "template[/etc/bird/bird6.conf]", :immediately
 end
 
-# Install python-etcd.
+# Install etcd and friends.
 package "python-etcd" do
     action :install
 end
+package "etcd" do
+    action :install
+end
+template "/etc/init/etcd.conf" do
+    mode "0640"
+    source "compute/etcd.conf.erb"
+    variables({
+        controller: controller,
+        controller_ip: controller_ip
+    })
+    owner "root"
+    group "root"
+    notifies :restart, "service[etcd]", :immediately
+end
+service "etcd" do
+    provider Chef::Provider::Service::Upstart
+    supports :restart => true
+    action [:nothing]
+done
 
 package "calico-compute" do
     action [:install]

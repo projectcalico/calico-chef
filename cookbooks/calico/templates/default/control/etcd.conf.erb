@@ -1,0 +1,20 @@
+# managed by chef, DO NOT EDIT
+description "etcd"
+author "etcd maintainers"
+
+start on stopped rc RUNLEVEL=[2345]
+stop on runlevel [!2345]
+
+respawn
+
+setuid etcd
+
+env ETCD_DATA_DIR=/var/lib/etcd
+export ETCD_DATA_DIR
+
+exec /usr/bin/etcd -name <%= node[:fqdn].gsub(/[^0-9a-z]/i, '') %>                                                      \
+                   -listen-peer-urls http://<%= node[:ipaddress] %>:2380                                                \
+                   -initial-advertise-peer-urls http://<%= node[:ipaddress] %>:2380                                     \
+                   -initial-cluster-token chef-cluster-1                                                                \
+                   -initial-cluster <%= node[:fqdn].gsub(/[^0-9a-z]/i, '') %>=http://<%= node[:ipaddress] %>:2380       \
+                   -initial-cluster-state new
