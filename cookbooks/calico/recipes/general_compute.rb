@@ -34,6 +34,9 @@ end
 apt_repository "calico-ppa" do
     uri node[:calico][:etcd_ppa]
     distribution node["lsb"]["codename"]
+    components ["main"]
+    keyserver "keyserver.ubuntu.com"
+    key node[:calico][:etcd_ppa_fingerprint]
     notifies :run, "execute[apt-get update]", :immediately
 end
 
@@ -200,13 +203,18 @@ template "/etc/init/etcd.conf" do
     })
     owner "root"
     group "root"
-    notifies :restart, "service[etcd]", :immediately
+    notifies :run, "bash[etcd-setup]", :immediately
 end
-service "etcd" do
-    provider Chef::Provider::Service::Upstart
-    supports :restart => true
+
+# This action removes the etcd database and restarts it.
+bash "etcd-setup" do
     action [:nothing]
-done
+    user "root"
+    code <<-EOH
+    rm -rf /var/lib/etcd/*
+    service etcd restart
+    EOH
+end
 
 package "calico-compute" do
     action [:install]
