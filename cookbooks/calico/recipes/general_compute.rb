@@ -174,12 +174,16 @@ ruby_block "expose-public-key" do
 end
 
 # Add the public key for the other compute nodes to our authorized_keys.
-file = Chef::Util::FileEdit.new("/var/lib/nova/.ssh/authorized_keys")
-other_compute.each do |n|
-    key = n[:calico][:nova_public_key]
-    file.insert_line_if_no_match(/#{key}/, key)
+ruby_block "load-compute-node-keys" do
+    block do
+        file = Chef::Util::FileEdit.new("/var/lib/nova/.ssh/authorized_keys")
+        other_compute.each do |n|
+            key = n[:calico][:nova_public_key]
+            file.insert_line_if_no_match(/#{key}/, key)
+	end
+	file.write_file
+    end
 end
-file.write_file
 
 # NETWORKING
 
