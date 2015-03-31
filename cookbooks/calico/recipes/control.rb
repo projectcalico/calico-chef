@@ -398,7 +398,7 @@ end
 # it is possible to hit window conditions adding duplicate entries to the DB.
 package "nova-conductor" do
     action [:install]
-    notifies :run "bash[initial-nova]", :immediately
+    notifies :run, "bash[initial-nova]", :immediately
 end
 
 bash "initial-nova" do
