@@ -358,9 +358,6 @@ end
 package "nova-cert" do
     action [:install]
 end
-package "nova-conductor" do
-    action [:install]
-end
 package "nova-consoleauth" do
     action [:install]
 end
@@ -396,6 +393,13 @@ execute "nova-manage db sync" do
     user "nova"
     notifies :run, "bash[initial-nova]", :immediately
 end
+
+# Install conductor after syncing the database - if conductor is running during the resync
+# it is possible to hit window conditions adding duplicate entries to the DB.
+package "nova-conductor" do
+    action [:install]
+end
+
 bash "initial-nova" do
     action [:nothing]
     user "root"
