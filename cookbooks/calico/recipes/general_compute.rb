@@ -167,12 +167,11 @@ file "/var/lib/nova/.ssh/authorized_keys" do
 end
 
 # Add SSH config to automatically accept unknown hosts
-cookbook_file "/var/lib/nova.ssh/config" do
+cookbook_file "/var/lib/nova/.ssh/config" do
     source "config.ssh"
     owner "nova"
     group "nova"
     mode "0600"
-    action :create
 end
 
 # Expose public key in attributes
