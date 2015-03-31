@@ -1,8 +1,10 @@
 # Find the controller hostname.
 controller = search(:node, "role:controller")[0][:fqdn]
 
-# Find the BGP neighbors, which is everyone except ourselves.
-bgp_neighbors = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
+# Find the other compute nodes.  This is everyone except ourselves.
+# These are both our BGP neighbors and a list of nodes that we need to share passwordless
+# nova authentication with.
+other_compute = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
 
 # Tell apt about the Calico repository server.
 template "/etc/apt/sources.list.d/calico.list" do
@@ -142,6 +144,42 @@ service "nova-api-metadata" do
     action [:nothing]
 end
 
+# Set up Nova passwordless authentication.
+execute "nova-logon-shell" do
+    user "root"
+    command "usermod -s /bin/bash nova"
+end
+
+# Create SSH key for nova user.
+execute "nova-ssh-keygen" do
+    user "root"
+    command "sudo -u nova ssh-keygen -q -t rsa -N '' -f /var/lib/nova/.ssh/id_rsa"
+    creates "/var/lib/nova/.ssh/id_rsa"
+    not_if { ::File.exists?("/var/lib/nova/.ssh/id_rsa")}
+end 
+
+# Create authorized keys file for nova.
+file "/var/lib/nova/.ssh/authorized_keys" do
+    owner "nova"
+    group "nova"
+    mode "0600"
+    action :create_if_missing
+end
+
+# Expose public key in attributes
+ruby_block "expose-public-key" do
+    block do
+        node.default['nova_public_key'] = ::File.read("/var/lib/nova/.ssh/id_rsa.pub")
+    end
+end
+
+# Add the public key for the other compute nodes to our authorized_keys.
+file = Chef::Util::FileEdit.("/var/lib/nova/.ssh/authorized_keys")
+other_compute.each do |n|
+    key = n.nova_public_key
+    file.insert_line_if_no_match(/#{key}/, key)
+end
+file.write_file
 
 # NETWORKING
 
@@ -207,7 +245,7 @@ template "/etc/bird/bird.conf" do
     mode "0640"
     source "compute/bird.conf.erb"
     variables({
-        bgp_neighbors: bgp_neighbors
+        bgp_neighbors: other_compute
     })
     owner "bird"
     group "bird"
@@ -218,7 +256,7 @@ template "/etc/bird/bird6.conf" do
     mode "0640"
     source "compute/bird6.conf.erb"
     variables({
-        bgp_neighbors: bgp_neighbors
+        bgp_neighbors: other_compute
     })
     owner "bird"
     group "bird"
