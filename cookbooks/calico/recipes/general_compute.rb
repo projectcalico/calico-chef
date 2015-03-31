@@ -169,14 +169,14 @@ end
 # Expose public key in attributes
 ruby_block "expose-public-key" do
     block do
-        node.default['nova_public_key'] = ::File.read("/var/lib/nova/.ssh/id_rsa.pub")
+        node[:calico][:nova_public_key] = ::File.read("/var/lib/nova/.ssh/id_rsa.pub")
     end
 end
 
 # Add the public key for the other compute nodes to our authorized_keys.
-file = Chef::Util::FileEdit.("/var/lib/nova/.ssh/authorized_keys")
+file = Chef::Util::FileEdit.new("/var/lib/nova/.ssh/authorized_keys")
 other_compute.each do |n|
-    key = n.nova_public_key
+    key = n[:calico][:nova_public_key]
     file.insert_line_if_no_match(/#{key}/, key)
 end
 file.write_file
