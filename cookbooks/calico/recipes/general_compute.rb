@@ -166,6 +166,15 @@ file "/var/lib/nova/.ssh/authorized_keys" do
     action :create_if_missing
 end
 
+# Add SSH config to automatically accept unknown hosts
+cookbook_file "/var/lib/nova.ssh/config" do
+    source "config.ssh"
+    owner "nova"
+    group "nova"
+    mode "0600"
+    action :create
+end
+
 # Expose public key in attributes
 ruby_block "expose-public-key" do
     block do
