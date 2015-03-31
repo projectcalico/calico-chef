@@ -397,7 +397,7 @@ end
 # Install conductor after syncing the database - if conductor is running during the resync
 # it is possible to hit window conditions adding duplicate entries to the DB.
 package "nova-conductor" do
-    action [:install]
+    action [:nothing]
     notifies :run, "bash[initial-nova]", :immediately
 end
 
@@ -431,7 +431,6 @@ template "/etc/nova/nova.conf" do
     notifies :restart, "service[nova-cert]", :immediately
     notifies :restart, "service[nova-consoleauth]", :immediately
     notifies :restart, "service[nova-scheduler]", :immediately
-    notifies :restart, "service[nova-conductor]", :immediately
     notifies :restart, "service[nova-novncproxy]", :immediately
 end
 service "nova-api" do
