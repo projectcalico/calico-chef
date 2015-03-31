@@ -391,13 +391,14 @@ end
 execute "nova-manage db sync" do
     action [:nothing]
     user "nova"
-    notifies :run, "bash[initial-nova]", :immediately
+    notifies :install, "package[nova-conductor]", :immediately
 end
 
 # Install conductor after syncing the database - if conductor is running during the resync
 # it is possible to hit window conditions adding duplicate entries to the DB.
 package "nova-conductor" do
     action [:install]
+    notifies :run "bash[initial-nova]", :immediately
 end
 
 bash "initial-nova" do
