@@ -144,7 +144,9 @@ service "nova-api-metadata" do
     action [:nothing]
 end
 
-# Set up Nova passwordless authentication.
+# SET UP NOVA WITH PASSWORDLESS AUTHENTICATION
+
+# Provide a logon shell for nova user.
 execute "nova-logon-shell" do
     user "root"
     command "usermod -s /bin/bash nova"
