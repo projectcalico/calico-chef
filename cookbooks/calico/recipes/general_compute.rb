@@ -51,6 +51,21 @@ bash "config-sysctl" do
     sysctl net.ipv6.conf.eth0.forwarding=0
     EOH
 end
+ruby_block "persist-sysctl" do
+     block do
+         file = Chef::Util::FileEdit.new("/etc/sysctl.conf")
+         file.search_file_replace_line(/.*net\.ipv4\.conf\.all\.forwarding.*/, "net.ipv4.conf.all.forwarding=1")
+         file.search_file_replace_line(/.*net\.ipv6\.conf\.all\.forwarding.*/, "net.ipv6.conf.all.forwarding=1")
+         file.search_file_replace_line(/.*net\.ipv6\.conf\.all\.accept_ra.*/, "net.ipv6.conf.all.accept_ra=2")
+         file.search_file_replace_line(/.*net\.ipv6\.conf\.eth0\.forwarding.*/, "net.ipv6.conf.eth0.forwarding=0")
+         file.insert_line_if_no_match(/.*net\.ipv4\.conf\.all\.forwarding.*/, "net.ipv4.conf.all.forwarding=1")
+         file.insert_line_if_no_match(/.*net\.ipv6\.conf\.all\.forwarding.*/, "net.ipv6.conf.all.forwarding=1")
+         file.insert_line_if_no_match(/.*net\.ipv6\.conf\.all\.accept_ra.*/, "net.ipv6.conf.all.accept_ra=2")
+         file.insert_line_if_no)match(/.*net\.ipv6\.conf\.eth0\.forwarding.*/, "net.ipv6.conf.eth0.forwarding=0")
+         file.write_file
+     end 
+     action [:nothing]
+end 
 
 # Install a few needed packages.
 package "ntp" do
@@ -314,6 +329,9 @@ package "nfs-common" do
     action [:nothing]
     only_if { node[:calico][:configure_nfs] }
     notifies :create_if_missing, "directory[/var/lib/nova_share]", :immediately
+    notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
+    notifies :run, "ruby_block[persist-share-config]", :immediately
+    notifies :run, "execute[mount-share]", :immediately
 end
 
 # Create share point.
@@ -322,14 +340,12 @@ directory "/var/lib/nova_share" do
     group "nova"
     mode "0777"
     action [:nothing]
-    notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
 end
 directory "/var/lib/nova_share/instances" do
     owner "nova"
     group "nova"
     mode "0777"
     action [:nothing]
-    notifies :run, "ruby_block[persist-share-config]", :immediately
 end
 
 # Add a persistent entry for the share point.
@@ -341,7 +357,6 @@ ruby_block "persist-share-config" do
         file.write_file
     end
     action [:nothing]
-    notifies :run, "execute[mount-share]", :immediately
 end
 
 # Mount the share.

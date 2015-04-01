@@ -52,6 +52,21 @@ bash "config-sysctl" do
     sysctl net.ipv6.conf.eth0.forwarding=0
     EOH
 end
+ruby_block "persist-sysctl" do
+    block do
+        file = Chef::Util::FileEdit.new("/etc/sysctl.conf")
+        file.search_file_replace_line(/.*net\.ipv4\.conf\.all\.forwarding.*/, "net.ipv4.conf.all.forwarding=1")
+        file.search_file_replace_line(/.*net\.ipv6\.conf\.all\.forwarding.*/, "net.ipv6.conf.all.forwarding=1")
+        file.search_file_replace_line(/.*net\.ipv6\.conf\.all\.accept_ra.*/, "net.ipv6.conf.all.accept_ra=2")
+        file.search_file_replace_line(/.*net\.ipv6\.conf\.eth0\.forwarding.*/, "net.ipv6.conf.eth0.forwarding=0")
+        file.insert_line_if_no_match(/.*net\.ipv4\.conf\.all\.forwarding.*/, "net.ipv4.conf.all.forwarding=1")
+        file.insert_line_if_no_match(/.*net\.ipv6\.conf\.all\.forwarding.*/, "net.ipv6.conf.all.forwarding=1")
+        file.insert_line_if_no_match(/.*net\.ipv6\.conf\.all\.accept_ra.*/, "net.ipv6.conf.all.accept_ra=2")
+        file.insert_line_if_no)match(/.*net\.ipv6\.conf\.eth0\.forwarding.*/, "net.ipv6.conf.eth0.forwarding=0")
+        file.write_file
+    end
+    action [:nothing]
+end
 
 # Installing MySQL is a pain. We can't use the OpenStack cookbook because it
 # lacks features we need, so we need to do it by hand. First, prevent Ubuntu
@@ -703,7 +718,25 @@ end
 package "nfs-kernel-server" do
     action [:nothing]
     only_if { node[:calico][:configure_nfs] }
+    notifies :run, "ruby_block[configure-idmapd]", :immediately
     notifies :create_if_missing, "directory[/var/lib/nova_share]", :immediately
+    notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
+    notifies :run, "ruby_block[add-unrestricted-share]", :immediately
+    notifies :run, "execute[reload-nfs-cfg]", :immediately
+    notifies :restart, "service[nfs-kernel-server]", :immediately
+    notifies :restart, "service[idmapd]", :immediately
+end
+
+# Ensure idmapd configuration is correct
+ruby_block "configure-idmapd" do
+    block do
+        file = Chef::Util::FileEdit.new("/etc/idmapd.conf")
+        file.insert_line_if_no_match(/\[Mapping\]\s/, "[Mapping]")
+        file.insert_line_after_match(/\[Mapping\]\s/, "Nobody-Group = nogroup")
+        file.insert_line_after_match(/\[Mapping\]\s/, "Nobody-User = nobody")
+        file.write_file
+    end
+    action [:nothing]
 end
 
 # Create share point
@@ -712,35 +745,34 @@ directory "/var/lib/nova_share" do
     group "nova"
     mode "0777"
     action [:nothing]
-    notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
 end
 directory "/var/lib/nova_share/instances" do
     owner "nova"
     group "nova"
     mode "0777"
     action [:nothing]
-    notifies :run, "ruby_block[add-unrestricted-share]", :immediately
 end
 
 # Add an unrestricted entry to the share point
 ruby_block "add-unrestricted-share" do
     block do
         file = Chef::Util::FileEdit.new("/etc/exports")
-	entry = "/var/lib/nova_share/instances *(rw,sync,fsid=0,no_root_squash)"
+	entry = "/var/lib/nova_share/instances *(rw,fsid=0,insecure,no_subtree_check,async,no_root_squash)"
         file.insert_line_if_no_match(/#{entry}/, entry)
         file.write_file
     end
     action [:nothing]
-    notifies :run, "execute[reload-nfs-cfg]", :immediately
 end
 
 execute "reload-nfs-cfg" do
     command "exportfs -r"
     action [:nothing]
-    notifies :restart, "service[nfs-kernel-server]", :immediately
 end
 
 service "nfs-kernel-server" do
     action [:nothing]
 end
 
+service "idmapd" do
+    action [:nothing]
+end
