@@ -374,7 +374,7 @@ template "/etc/nova/nova.conf" do
     source "control/nova.conf.erb"
     variables({
         admin_password: node[:calico][:admin_password],
-	configure_nfs: node[:calico][:configure_nfs]
+        configure_nfs: node[:calico][:configure_nfs]
     })
     owner "nova"
     group "nova"
@@ -695,7 +695,6 @@ bash "basic-networks" do
     EOH
     not_if "neutron net-list | grep demo-net"
 end
-
 
 
 # NFS SERVER CONFIGURATION

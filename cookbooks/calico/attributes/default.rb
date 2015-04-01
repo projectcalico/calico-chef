@@ -7,6 +7,6 @@ default["calico"]["admin_token"]    = "abcdef"
 default["calico"]["package_source"] = "http://binaries.projectcalico.org/repo ./"
 default["calico"]["package_key"]    = "http://binaries.projectcalico.org/repo/key"
 
-# The list of compute node FQDNs used to setup an NFS mount on the controller
-# for testing live migration.
-default["calico"]["compute_fqdns"] = nil
+# Whether an NFS mount will be created.  This is not usually recommended since the
+# mount that these scripts create is unprotected.
+default["calico"]["configure_nfs"] = false
