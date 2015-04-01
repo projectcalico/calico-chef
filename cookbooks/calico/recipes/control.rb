@@ -369,12 +369,29 @@ package "nova-scheduler" do
     notifies :create, "template[/etc/nova/nova.conf]", :immediately
     notifies :run, "execute[remove-old-nova-db]", :immediately
 end
+template "/etc/nova/nova.conf" do
+    mode "0640"
+    source "control/nova.conf.erb"
+    variables({
+        admin_password: node[:calico][:admin_password],
+	configure_nfs: node[:calico][:configure_nfs]
+    })
+    owner "nova"
+    group "nova"
+    notifies :install, "package[nfs-kernel-server]", :immediately
+    notifies :restart, "service[nova-api]", :immediately
+    notifies :restart, "service[nova-cert]", :immediately
+    notifies :restart, "service[nova-consoleauth]", :immediately
+    notifies :restart, "service[nova-scheduler]", :immediately
+    notifies :restart, "service[nova-novncproxy]", :immediately
+end
 
 execute "remove-old-nova-db" do
     action [:nothing]
     command "rm /var/lib/nova/nova.sqlite"
     notifies :run, "bash[nova-db-setup]", :immediately
 end
+
 bash "nova-db-setup" do
     action [:nothing]
     user "root"
@@ -419,20 +436,6 @@ bash "initial-nova" do
     notifies :restart, "service[nova-scheduler]", :immediately
 end
 
-template "/etc/nova/nova.conf" do
-    mode "0640"
-    source "control/nova.conf.erb"
-    variables({
-        admin_password: node[:calico][:admin_password]
-    })
-    owner "nova"
-    group "nova"
-    notifies :restart, "service[nova-api]", :immediately
-    notifies :restart, "service[nova-cert]", :immediately
-    notifies :restart, "service[nova-consoleauth]", :immediately
-    notifies :restart, "service[nova-scheduler]", :immediately
-    notifies :restart, "service[nova-novncproxy]", :immediately
-end
 service "nova-api" do
     provider Chef::Provider::Service::Upstart
     supports :restart => true
@@ -692,3 +695,53 @@ bash "basic-networks" do
     EOH
     not_if "neutron net-list | grep demo-net"
 end
+
+
+
+# NFS SERVER CONFIGURATION
+
+# Install NFS kernel server.
+package "nfs-kernel-server" do
+    action [:nothing]
+    only_if { node[:calico][:configure_nfs] }
+    notifies :create_if_missing, "directory[/var/lib/nova_share]", :immediately
+end
+
+# Create share point
+directory "/var/lib/nova_share" do
+    owner "nova"
+    group "nova"
+    mode "0755"
+    action [:nothing]
+    notifies :create_if_missing, "directory[/var/lib/nova_share/instances", :immediately
+end
+directory "/var/lib/nova_share/instances" do
+    owner "nova"
+    group "nova"
+    mode "0755"
+    action [:nothing]
+    notifies :run, "ruby_block[add-unrestricted-share]", :immediately
+end
+
+# Add an unrestricted entry to the share point
+ruby_block "add-unrestricted-share" do
+    block do
+        file = Chef::Util::FileEdit.new("/etc/exports")
+	entry = "/var/lib/nova_share/instances *(rw,sync,fsid=0,no_root_squash)"
+        file.insert_line_if_no_match(/#{entry}/, entry)
+        file.write_file
+    end
+    action [:nothing]
+    notifies :run, "execute[reload-nfs-cfg]", :immediately
+end
+
+execute "reload-nfs-cfg" do
+    command "exportfs -r"
+    action[:nothing]
+    notifies :restart, "service[nfs-kernel-server]", :immediately
+end
+
+service "nfs-kernel-server" do
+    action [:nothing]
+end
+

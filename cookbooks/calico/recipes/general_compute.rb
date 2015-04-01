@@ -1,4 +1,4 @@
-# Find the controller hostname.
+# Find the controller FQDN.
 controller = search(:node, "role:controller")[0][:fqdn]
 
 # Find the other compute nodes.  This is everyone except ourselves.
@@ -107,10 +107,12 @@ template "/etc/nova/nova.conf" do
     source "compute/nova.conf.erb"
     variables({
         admin_password: node[:calico][:admin_password],
-        controller: controller
+        controller: controller,
+	configure_nfs: node[:calico][:configure_nfs]
     })
     owner "nova"
     group "nova"
+    notifies :install, "package[nfs-common]", :immediately
     notifies :delete, "file[/var/lib/nova/nova.sqlite]", :immediately
     notifies :restart, "service[nova-compute]", :immediately
     notifies :restart, "service[nova-api-metadata]", :immediately
@@ -303,4 +305,47 @@ template "/etc/calico/felix.cfg" do
     owner "root"
     group "root"
     notifies :start, "service[calico-felix]", :immediately
+end
+
+# NFS SERVER CONFIGURATION
+
+# Install NFS kernel server.
+package "nfs-common" do
+    action [:nothing]
+    only_if { node[:calico][:configure_nfs] }
+    notifies :create_if_missing, "directory[/var/lib/nova_share]", :immediately
+end
+
+# Create share point.
+directory "/var/lib/nova_share" do
+    owner "nova"
+    group "nova"
+    mode "0755"
+    action [:nothing]
+    notifies :create_if_missing, "directory[/var/lib/nova_share/instances", :immediately
+end
+directory "/var/lib/nova_share/instances" do
+    owner "nova"
+    group "nova"
+    mode "0755"
+    action [:nothing]
+    notifies :run, "ruby_block[persist-share-config]", :immediately
+end
+
+# Add a persistent entry for the share point.
+ruby_block "persist-share-config" do
+    block do
+        file = Chef::Util::FileEdit.new("/etc/fstab")
+        entry = controller + ":/ /var/lib/nova_share/instances nfs4 defaults 0 0"
+        file.insert_line_if_no_match(/#{entry}/, entry)
+        file.write_file
+    end
+    action [:nothing]
+    notifies :run, "execute[mount-share]", :immediately
+end
+
+# Mount the share.
+execute "mount-share" do
+    command "mount -v -t nfs4 -o nfsvers=4 " + controller + ":/ /var/lib/nova_share/instances"
+    action[:nothing]
 end
