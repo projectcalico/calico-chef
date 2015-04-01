@@ -65,7 +65,6 @@ ruby_block "persist-sysctl" do
         file.insert_line_if_no_match(/.*net\.ipv6\.conf\.eth0\.forwarding.*/, "net.ipv6.conf.eth0.forwarding=0")
         file.write_file
     end
-    action [:nothing]
 end
 
 # Installing MySQL is a pain. We can't use the OpenStack cookbook because it
