@@ -710,14 +710,14 @@ end
 directory "/var/lib/nova_share" do
     owner "nova"
     group "nova"
-    mode "0755"
+    mode "0777"
     action [:nothing]
     notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
 end
 directory "/var/lib/nova_share/instances" do
     owner "nova"
     group "nova"
-    mode "0755"
+    mode "0777"
     action [:nothing]
     notifies :run, "ruby_block[add-unrestricted-share]", :immediately
 end
