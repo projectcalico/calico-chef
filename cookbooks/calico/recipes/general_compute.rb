@@ -322,7 +322,7 @@ directory "/var/lib/nova_share" do
     group "nova"
     mode "0755"
     action [:nothing]
-    notifies :create_if_missing, "directory[/var/lib/nova_share/instances", :immediately
+    notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
 end
 directory "/var/lib/nova_share/instances" do
     owner "nova"
@@ -347,5 +347,5 @@ end
 # Mount the share.
 execute "mount-share" do
     command "mount -v -t nfs4 -o nfsvers=4 " + controller + ":/ /var/lib/nova_share/instances"
-    action[:nothing]
+    action [:nothing]
 end

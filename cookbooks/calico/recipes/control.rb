@@ -712,7 +712,7 @@ directory "/var/lib/nova_share" do
     group "nova"
     mode "0755"
     action [:nothing]
-    notifies :create_if_missing, "directory[/var/lib/nova_share/instances", :immediately
+    notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
 end
 directory "/var/lib/nova_share/instances" do
     owner "nova"
