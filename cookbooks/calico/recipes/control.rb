@@ -736,7 +736,7 @@ end
 
 execute "reload-nfs-cfg" do
     command "exportfs -r"
-    action[:nothing]
+    action [:nothing]
     notifies :restart, "service[nfs-kernel-server]", :immediately
 end
 
