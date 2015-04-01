@@ -61,7 +61,7 @@ ruby_block "persist-sysctl" do
          file.insert_line_if_no_match(/.*net\.ipv4\.conf\.all\.forwarding.*/, "net.ipv4.conf.all.forwarding=1")
          file.insert_line_if_no_match(/.*net\.ipv6\.conf\.all\.forwarding.*/, "net.ipv6.conf.all.forwarding=1")
          file.insert_line_if_no_match(/.*net\.ipv6\.conf\.all\.accept_ra.*/, "net.ipv6.conf.all.accept_ra=2")
-         file.insert_line_if_no)match(/.*net\.ipv6\.conf\.eth0\.forwarding.*/, "net.ipv6.conf.eth0.forwarding=0")
+         file.insert_line_if_no_match(/.*net\.ipv6\.conf\.eth0\.forwarding.*/, "net.ipv6.conf.eth0.forwarding=0")
          file.write_file
      end 
      action [:nothing]
