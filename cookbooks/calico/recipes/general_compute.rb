@@ -330,7 +330,7 @@ execute "live-migration" do
     only_if { node[:calico][:live_migrate] }
     command "id nova >> /tmp/nova.user"
     notifies :run, "ruby_block[store-nova-user-info]", :immediately
-    notifies :stop, "service[nova-api]", :immediately
+    notifies :stop, "service[nova-api-metadata]", :immediately
     notifies :stop, "service[libvirt-bin]", :immediately
     notifies :run, "ruby_block[update-libvirt]", :immediately
     notifies :run, "ruby_block[fix-nova-files]", :immediately
@@ -339,7 +339,7 @@ execute "live-migration" do
     notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
     notifies :run, "ruby_block[persist-share-config]", :immediately
     notifies :run, "execute[mount-share]", :immediately
-    notifies :start, "service[nova-api]", :immediately
+    notifies :start, "service[nova-api-metadata]", :immediately
     notifies :start, "service[libvirt-bin]", :immediately
 end
 
@@ -352,11 +352,6 @@ ruby_block "store-nova-user-info" do
         node.set["nova_gid"] = match[:gid]
     end 
 end 
-
-# Service nova-api
-service "nova-api" do
-    action [:nothing]
-end
 
 # Update the libvirt configuration required to get live migration working.
 ruby_block "update-libvirt" do
