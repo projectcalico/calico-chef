@@ -126,7 +126,6 @@ template "/etc/nova/nova.conf" do
     })
     owner "nova"
     group "nova"
-    notifies :run, "execute[live-migration]", :immediately
     notifies :delete, "file[/var/lib/nova/nova.sqlite]", :immediately
     notifies :restart, "service[nova-compute]", :immediately
     notifies :restart, "service[nova-api-metadata]", :immediately
@@ -142,6 +141,7 @@ template "/etc/nova/nova-compute.conf" do
     owner "nova"
     group "nova"
     notifies :restart, "service[nova-compute]", :immediately
+    notifies :run, "execute[live-migration]", :immediately
 end
 
 # Delete the sqlite DB and restart Nova.
@@ -329,7 +329,7 @@ execute "live-migration" do
     action [:nothing]
     only_if { node[:calico][:live_migrate] }
     command "id nova >> /tmp/nova.user"
-    notifies :run, "ruby_block[store-nova-user-info]"; :immediately
+    notifies :run, "ruby_block[store-nova-user-info]", :immediately
     notifies :stop, "service[nova-api]", :immediately
     notifies :stop, "service[libvirt-bin]", :immediately
     notifies :run, "ruby_block[update-libvirt]", :immediately
