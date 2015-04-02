@@ -353,11 +353,8 @@ ruby_block "store-nova-user-info" do
     end 
 end 
 
-# Service nova-api and libvirt-bin
+# Service nova-api
 service "nova-api" do
-    action [:nothing]
-end
-service "libvirt-bin" do
     action [:nothing]
 end
 
@@ -388,16 +385,16 @@ ruby_block "fix-nova-files" do
         print "Current Nova UID: #{node[:nova_uid]}\n"
         print "Current Nova GUI: #{node[:nova_gid]}\n"
     end
-    notifies :run, "bash[fix-nova-files-uid]", :immediately
-    notifies :run, "bash[fix-nova-files-gid]", :immediately
+    notifies :run, "execute[fix-nova-files-uid]", :immediately
+    notifies :run, "execute[fix-nova-files-gid]", :immediately
 end
     
-bash "fix-nova-files-uid" do
+execute "fix-nova-files-uid" do
     action [:nothing]
     command "find / -uid #{node[:nova_uid]} -exec chown nova {}"
 end
 
-bash "fix-nova-files-gid" do
+execute "fix-nova-files-gid" do
     action [:nothing]
     command "find / -gid #{node[:nova_gid]} -exec chgrp nova {}"
 end
