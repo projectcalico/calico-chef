@@ -489,8 +489,8 @@ ruby_block "store-nova-user-info" do
     block do
         output = ::File.read("/tmp/nova.user")	
         match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output)
-	node.default["nova_uid"] = match[:uid]
-	node.default["nova_gid"] = match[:gid]
+	node.set["nova_uid"] = match[:uid]
+	node.set["nova_gid"] = match[:gid]
     end
 end
 

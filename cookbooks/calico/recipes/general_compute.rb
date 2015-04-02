@@ -195,7 +195,7 @@ end
 # Expose public key in attributes
 ruby_block "expose-public-key" do
     block do
-        node.default['nova_public_key'] = ::File.read("/var/lib/nova/.ssh/id_rsa.pub")
+        node.set['nova_public_key'] = ::File.read("/var/lib/nova/.ssh/id_rsa.pub")
     end
 end
 
@@ -348,8 +348,8 @@ ruby_block "store-nova-user-info" do
     block do
         output = ::File.read("/tmp/nova.user")                
         match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output)
-        node.default["nova_uid"] = match[:uid]
-        node.default["nova_gid"] = match[:gid]
+        node.set["nova_uid"] = match[:uid]
+        node.set["nova_gid"] = match[:gid]
     end 
 end 
 
@@ -391,12 +391,12 @@ end
     
 execute "fix-nova-files-uid" do
     action [:nothing]
-    command "find / -uid #{node[:nova_uid]} -exec chown nova {}"
+    command "find / -uid #{node[:nova_uid]} -exec chown nova {} \\;"
 end
 
 execute "fix-nova-files-gid" do
     action [:nothing]
-    command "find / -gid #{node[:nova_gid]} -exec chgrp nova {}"
+    command "find / -gid #{node[:nova_gid]} -exec chgrp nova {} \\;"
 end
 
 # Install NFS kernel server.
