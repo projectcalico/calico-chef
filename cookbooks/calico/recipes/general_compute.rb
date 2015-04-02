@@ -1,5 +1,5 @@
-# Find the controller FQDN.
-controller = search(:node, "role:controller")[0][:fqdn]
+# Find the controller node and controller FQDN.
+controller = search(:node, "role:controller")[0]
 
 # Find the other compute nodes.  This is everyone except ourselves.
 # These are both our BGP neighbors and a list of nodes that we need to share passwordless
@@ -121,7 +121,7 @@ template "/etc/nova/nova.conf" do
     source "compute/nova.conf.erb"
     variables({
         admin_password: node[:calico][:admin_password],
-        controller: controller,
+        controller: controller[:fqdn],
 	live_migrate: node[:calico][:live_migrate]
     })
     owner "nova"
@@ -226,7 +226,7 @@ template "/etc/neutron/neutron.conf" do
     source "compute/neutron.conf.erb"
     variables({
         admin_password: node[:calico][:admin_password],
-        controller: controller
+        controller: controller[:fqdn]
     })
     owner "root"
     group "neutron"
@@ -314,7 +314,7 @@ template "/etc/calico/felix.cfg" do
     mode "0644"
     source "compute/felix.cfg.erb"
     variables({
-        controller: controller
+        controller: controller[:fqdn]
     })
     owner "root"
     group "root"
@@ -385,8 +385,20 @@ ruby_block "fix-nova-files" do
         print "Current Nova UID: #{node[:nova_uid]}\n"
         print "Current Nova GUI: #{node[:nova_gid]}\n"
     end
+    notifies :run, "execute[set-nova-uid]", :immediately
+    notifies :run, "execute[set-nova-gid]", :immediately
     notifies :run, "execute[fix-nova-files-uid]", :immediately
     notifies :run, "execute[fix-nova-files-gid]", :immediately
+end
+
+execute "set-nova-uid" do
+    action [:nothing]
+    command "usermod -u #{controller[:nova_uid]} nova"
+end
+
+execute "set-nova-gid" do
+    action [:nothing]
+    command "groupmod -g #{controller[:nova_gid]} nova"
 end
     
 execute "fix-nova-files-uid" do
@@ -422,7 +434,7 @@ end
 ruby_block "persist-share-config" do
     block do
         file = Chef::Util::FileEdit.new("/etc/fstab")
-        entry = "#{controller}:/ /var/lib/nova_share/instances nfs4 defaults 0 0"
+        entry = "#{controller[:fqdn]}:/ /var/lib/nova_share/instances nfs4 defaults 0 0"
         file.insert_line_if_no_match(/#{entry}/, entry)
         file.write_file
     end
@@ -431,6 +443,6 @@ end
 
 # Mount the share.
 execute "mount-share" do
-    command "mount -v -t nfs4 -o nfsvers=4 #{controller}:/ /var/lib/nova_share/instances"
+    command "mount -v -t nfs4 -o nfsvers=4 #{controller[:fqdn]}:/ /var/lib/nova_share/instances"
     action [:nothing]
 end
