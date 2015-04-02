@@ -358,7 +358,7 @@ ruby_block "update-libvirt" do
 	file.search_file_replace_line(/libvirtd_opts\s*=\s*\".*/, "libvirtd_opts=\" -d -l\"")
 	file.write_file
         file = Chef::Util::FileEdit.new("/etc/init/libvirt-bin.conf")
-        file.search_file_replace_line(/libvirtd_opts\s*=\s*\".*/, "libvirtd_opts=\" -d -l\"")
+        file.search_file_replace_line(/\s*env\s*libvirtd_opts\s*=\s*\".*/, "env libvirtd_opts=\" -d -l\"")
         file.write_file
     end
 end
