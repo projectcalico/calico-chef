@@ -346,7 +346,7 @@ end
 ruby_block "update-libvirt" do
     action [:nothing]
     block do
-        file = Chef::Util::FileEdit.new("/etc/libvirt/libvirt.conf")
+        file = Chef::Util::FileEdit.new("/etc/libvirt/libvirtd.conf")
         file.search_file_replace_line(/.*listen_tls.*/, "listen_tls=0")
         file.search_file_replace_line(/.*listen_tcp.*/, "listen_tcp=1")
         file.search_file_replace_line(/.*auth_tcp.*/, "auth_tcp=\"none\"")
