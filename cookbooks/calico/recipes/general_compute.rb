@@ -385,8 +385,8 @@ end
 ruby_block "fix-nova-files" do
     action [:nothing]
     block do
-        print "Current Nova UID: " + node["nova_uid"] + "\n"
-        print "Current Nova GUI: " + node["nova_gid"] + "\n"
+        print "Current Nova UID: #{node[:nova_uid]}\n"
+        print "Current Nova GUI: #{node[:nova_gid]}\n"
     end
     notifies :run, "bash[fix-nova-files-uid]", :immediately
     notifies :run, "bash[fix-nova-files-gid]", :immediately
@@ -394,12 +394,12 @@ end
     
 bash "fix-nova-files-uid" do
     action [:nothing]
-    command "find / -uid " + node["nova_uid"] + " -exec chown nova {}"
+    command "find / -uid #{node[:nova_uid]} -exec chown nova {}"
 end
 
 bash "fix-nova-files-gid" do
     action [:nothing]
-    command "find / -gid " + node["nova_gid"] + " -exec chgrp nova {}"
+    command "find / -gid #{node[:nova_gid]} -exec chgrp nova {}"
 end
 
 # Install NFS kernel server.
@@ -425,7 +425,7 @@ end
 ruby_block "persist-share-config" do
     block do
         file = Chef::Util::FileEdit.new("/etc/fstab")
-        entry = controller + ":/ /var/lib/nova_share/instances nfs4 defaults 0 0"
+        entry = "#{controller}:/ /var/lib/nova_share/instances nfs4 defaults 0 0"
         file.insert_line_if_no_match(/#{entry}/, entry)
         file.write_file
     end
@@ -434,6 +434,6 @@ end
 
 # Mount the share.
 execute "mount-share" do
-    command "mount -v -t nfs4 -o nfsvers=4 " + controller + ":/ /var/lib/nova_share/instances"
+    command "mount -v -t nfs4 -o nfsvers=4 #{controller}:/ /var/lib/nova_share/instances"
     action [:nothing]
 end
