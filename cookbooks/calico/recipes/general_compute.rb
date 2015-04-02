@@ -393,12 +393,11 @@ end
     
 execute "fix-nova-files-uid" do
     action [:nothing]
-    command lazy { "find / -uid #{node[:nova_uid]} -exec chown nova {} \\;" }
+    command lazy { "find / -path /proc -prune -o -uid #{node[:nova_uid]} -exec chown nova {} \\;" }
 end
-
 execute "fix-nova-files-gid" do
     action [:nothing]
-    command lazy { "find / -gid #{node[:nova_gid]} -exec chgrp nova {} \\;" }
+    command lazy { "find / -path /proc -prune -o -gid #{node[:nova_gid]} -exec chgrp nova {} \\;" }
 end
 
 # Install NFS kernel server.
