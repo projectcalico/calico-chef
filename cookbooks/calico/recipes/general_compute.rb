@@ -384,6 +384,10 @@ end
 
 ruby_block "fix-nova-files" do
     action [:nothing]
+    block do
+        print "Current Nova UID: " + node[:nova_uid] + "\n"
+        print "Current Nova GUI: " + node[:nova_gid] + "\n"
+    end
     notifies :run, "bash[:fix-nova-files-uid]", :immediately
     notifies :run, "bash[:fix-nova-files-gid]", :immediately
 end
