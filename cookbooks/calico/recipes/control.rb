@@ -481,10 +481,13 @@ service "nova-novncproxy" do
     action [:nothing]
 end
 
-# Store the UID and GID for nova - this may be required for live migration
+# Output and store the UID and GID for nova - this may be required for live migration
+execute "get-nova-info" do
+    command "id nova >> /tmp/nova.user"
+end
 ruby_block "store-nova-user-info" do
     block do
-        command = Chef::Mixlib::Shellout.new("id nova")
+        output = ::File.read("/tmp/nova.user")	
         match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(command.run_command.stdout)
 	node.default["nova_uid"] = match[:uid]
 	node.default["nova_gid"] = match[:gid]

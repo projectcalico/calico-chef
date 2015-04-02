@@ -126,7 +126,7 @@ template "/etc/nova/nova.conf" do
     })
     owner "nova"
     group "nova"
-    notifies :install, "package[nfs-common]", :immediately
+    notifies :run, "execute[live-migration]", :immediately
     notifies :delete, "file[/var/lib/nova/nova.sqlite]", :immediately
     notifies :restart, "service[nova-compute]", :immediately
     notifies :restart, "service[nova-api-metadata]", :immediately
@@ -325,15 +325,11 @@ end
 
 # Kick off the set of live migration tasks.  Start by getting the nova and
 # gid and uid.  We need to ensure these are the same across all nodes.
-ruby_block "live-migration" do
+execute "live-migration" do
     action [:nothing]
     only_if { node[:calico][:live_migrate] }
-    block do
-        output = Chef::Mixin::Shellout.shellout("id nova")
-        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output.stdout)
-        node.default["nova_uid"] = match[:uid]
-        node.default["nova_gid"] = match[:gid]
-    end
+    command "id nova >> /tmp/nova.user"
+    notifies :run, "ruby_block[store-nova-user-info]"; :immediately
     notifies :stop, "service[nova-api]", :immediately
     notifies :stop, "service[libvirt-bin]", :immediately
     notifies :run, "ruby_block[update-libvirt]", :immediately
@@ -346,6 +342,16 @@ ruby_block "live-migration" do
     notifies :start, "service[nova-api]", :immediately
     notifies :start, "service[libvirt-bin]", :immediately
 end
+
+ruby_block "store-nova-user-info" do
+    action [:nothing]
+    block do
+        output = ::File.read("/tmp/nova.user")                
+        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(command.run_command.stdout)
+        node.default["nova_uid"] = match[:uid]
+        node.default["nova_gid"] = match[:gid]
+    end 
+end 
 
 # Service nova-api and libvirt-bin
 service "nova-api" do
