@@ -329,7 +329,6 @@ execute "live-migration" do
     action [:nothing]
     only_if { node[:calico][:live_migrate] }
     command "id nova >> /tmp/nova.user"
-    notifies :run, "ruby_block[store-nova-user-info]", :immediately
     notifies :stop, "service[nova-api-metadata]", :immediately
     notifies :stop, "service[libvirt-bin]", :immediately
     notifies :run, "ruby_block[update-libvirt]", :immediately
@@ -342,16 +341,6 @@ execute "live-migration" do
     notifies :start, "service[nova-api-metadata]", :immediately
     notifies :start, "service[libvirt-bin]", :immediately
 end
-
-ruby_block "store-nova-user-info" do
-    action [:nothing]
-    block do
-        output = ::File.read("/tmp/nova.user")                
-        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output)
-        node.set["nova_uid"] = match[:uid]
-        node.set["nova_gid"] = match[:gid]
-    end 
-end 
 
 # Update the libvirt configuration required to get live migration working.
 ruby_block "update-libvirt" do
@@ -377,8 +366,10 @@ end
 ruby_block "fix-nova-files" do
     action [:nothing]
     block do
-        print "Current Nova UID: #{node[:nova_uid]}\n"
-        print "Current Nova GUI: #{node[:nova_gid]}\n"
+        output = ::File.read("/tmp/nova.user")                
+        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output)
+        node.set["nova_uid"] = match[:uid]
+        node.set["nova_gid"] = match[:gid]
     end
     notifies :run, "execute[set-nova-uid]", :immediately
     notifies :run, "execute[set-nova-gid]", :immediately
@@ -402,12 +393,12 @@ end
     
 execute "fix-nova-files-uid" do
     action [:nothing]
-    command "find / -uid #{node[:nova_uid]} -exec chown nova {} \\;"
+    command lazy { "find / -uid #{node[:nova_uid]} -exec chown nova {} \\;" }
 end
 
 execute "fix-nova-files-gid" do
     action [:nothing]
-    command "find / -gid #{node[:nova_gid]} -exec chgrp nova {} \\;"
+    command lazy { "find / -gid #{node[:nova_gid]} -exec chgrp nova {} \\;" }
 end
 
 # Install NFS kernel server.
