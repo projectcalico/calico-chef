@@ -140,8 +140,8 @@ template "/etc/nova/nova-compute.conf" do
     }
     owner "nova"
     group "nova"
-    notifies :restart, "service[nova-compute]", :immediately
     notifies :run, "execute[live-migration]", :immediately
+    notifies :restart, "service[nova-compute]", :immediately
 end
 
 # Delete the sqlite DB and restart Nova.
@@ -329,6 +329,7 @@ execute "live-migration" do
     action [:nothing]
     only_if { node[:calico][:live_migrate] }
     command "id nova >> /tmp/nova.user"
+    notifies :stop, "service[nova-compute]", :immediately
     notifies :stop, "service[nova-api-metadata]", :immediately
     notifies :stop, "service[libvirt-bin]", :immediately
     notifies :run, "ruby_block[update-libvirt]", :immediately
@@ -340,6 +341,7 @@ execute "live-migration" do
     notifies :run, "execute[mount-share]", :immediately
     notifies :start, "service[nova-api-metadata]", :immediately
     notifies :start, "service[libvirt-bin]", :immediately
+    notifies :start, "service[nova-compute]", :immediately
 end
 
 # Update the libvirt configuration required to get live migration working.
