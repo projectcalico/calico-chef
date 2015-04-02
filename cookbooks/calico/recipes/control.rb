@@ -206,16 +206,6 @@ bash "initial-keystone" do
     EOH
 end
 
-# Store the UID and GID for nova - this may be required for live migration
-ruby_block "store-nova-user-info" do
-    block do
-        output = Chef::Mixin::Shellout.shellout("id nova")
-        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output.stdout)
-	node.default["nova_uid"] = match[:uid]
-	node.default["nova_gid"] = match[:gid]
-    end
-end
-
 # CLIENTS
 
 package "python-cinderclient" do
@@ -268,6 +258,7 @@ ruby_block "environments" do
     end
     action :create
 end
+
 
 # GLANCE
 
@@ -488,6 +479,16 @@ service "nova-novncproxy" do
     provider Chef::Provider::Service::Upstart
     supports :restart => true
     action [:nothing]
+end
+
+# Store the UID and GID for nova - this may be required for live migration
+ruby_block "store-nova-user-info" do
+    block do
+        command = Chef::Mixlib::Shellout.new("id nova")
+        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(command.run_command.stdout)
+	node.default["nova_uid"] = match[:uid]
+	node.default["nova_gid"] = match[:gid]
+    end
 end
 
 
