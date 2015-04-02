@@ -122,7 +122,7 @@ template "/etc/nova/nova.conf" do
     variables({
         admin_password: node[:calico][:admin_password],
         controller: controller,
-	configure_nfs: node[:calico][:configure_nfs]
+	live_migrate: node[:calico][:live_migrate]
     })
     owner "nova"
     group "nova"
@@ -321,16 +321,80 @@ template "/etc/calico/felix.cfg" do
     notifies :start, "service[calico-felix]", :immediately
 end
 
-# NFS SERVER CONFIGURATION
+# LIVE MIGRATION CONFIGURATION 
 
-# Install NFS kernel server.
-package "nfs-common" do
+# Kick off the set of live migration tasks.  Start by getting the nova and
+# gid and uid.  We need to ensure these are the same across all nodes.
+ruby_block "live-migration" do
     action [:nothing]
-    only_if { node[:calico][:configure_nfs] }
+    only_if { node[:calico][:live_migrate] }
+    block do
+        output = Chef::Mixin::Shellout.shellout("id nova")
+        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output.stdout)
+        node.default["nova_uid"] = match[:uid]
+        node.default["nova_gid"] = match[:gid]
+    end
+    notifies :stop, "service[nova-api]", :immediately
+    notifies :stop, "service[libvirt-bin]", :immediately
+    notifies :run, "ruby_block[update-libvirt]", :immediately
+    notifies :run, "ruby_block[fix-nova-files]", :immediately
+    notifies :install, "package[nfs-common]", :immediately
     notifies :create_if_missing, "directory[/var/lib/nova_share]", :immediately
     notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
     notifies :run, "ruby_block[persist-share-config]", :immediately
     notifies :run, "execute[mount-share]", :immediately
+    notifies :start, "service[nova-api]", :immediately
+    notifies :start, "service[libvirt-bin]", :immediately
+end
+
+# Service nova-api and libvirt-bin
+service "nova-api" do
+    action [:nothing]
+end
+service "libvirt-bin" do
+    action [:nothing]
+end
+
+# Update the libvirt configuration required to get live migration working.
+ruby_block "update-libvirt" do
+    action [:nothing]
+    block do
+        file = Chef::Util::FileEdit.new("/etc/libvirt/libvirt.conf")
+        file.search_file_replace_line(/.*listen_tls.*/, "listen_tls=0")
+        file.search_file_replace_line(/.*listen_tcp.*/, "listen_tcp=1")
+        file.search_file_replace_line(/.*auth_tcp.*/, "auth_tcp=\"none\"")
+        file.insert_line_if_no_match(/.*listen_tls.*/, "listen_tls=0")
+        file.insert_line_if_no_match(/.*listen_tcp.*/, "listen_tcp=1")
+        file.insert_line_if_no_match(/.*auth_tcp.*/, "auth_tcp=\"none\"")
+	file.write_file
+	file = Chef::Util::FileEdit.new("/etc/default/libvirt-bin")
+	file.search_file_replace_line(/libvirtd_opts\s*=\s*\".*/, "libvirtd_opts=\" -d -l\"")
+	file.write_file
+        file = Chef::Util::FileEdit.new("/etc/init/libvirt-bin.conf")
+        file.search_file_replace_line(/libvirtd_opts\s*=\s*\".*/, "libvirtd_opts=\" -d -l\"")
+        file.write_file
+    end
+end
+
+ruby_block "fix-nova-files" do
+    action [:nothing]
+    notifies :run, "bash[:fix-nova-files-uid]", :immediately
+    notifies :run, "bash[:fix-nova-files-gid]", :immediately
+end
+    
+bash "fix-nova-files-uid" do
+    action [:nothing]
+    command "find / -uid " + node[:nova_uid] + " -exec chown nova {}"
+end
+
+bash "fix-nova-files-gid" do
+    action [:nothing]
+    command "find / -gid " + node[:noda_gid] + " -exec chgrp nova {}"
+end
+
+# Install NFS kernel server.
+package "nfs-common" do
+    action [:nothing]
 end
 
 # Create share point.

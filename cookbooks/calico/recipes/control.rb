@@ -206,6 +206,15 @@ bash "initial-keystone" do
     EOH
 end
 
+# Store the UID and GID for nova - this may be required for live migration
+ruby_block "store-nova-user-info" do
+    block do
+        output = Chef::Mixin::Shellout.shellout("id nova")
+        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output.stdout)
+	node.default["nova_uid"] = match[:uid]
+	node.default["nova_gid"] = match[:gid]
+    end
+end
 
 # CLIENTS
 
@@ -388,7 +397,7 @@ template "/etc/nova/nova.conf" do
     source "control/nova.conf.erb"
     variables({
         admin_password: node[:calico][:admin_password],
-        configure_nfs: node[:calico][:configure_nfs]
+        live_migreate: node[:calico][:live_migrate]
     })
     owner "nova"
     group "nova"
@@ -711,12 +720,12 @@ bash "basic-networks" do
 end
 
 
-# NFS SERVER CONFIGURATION
+# LIVE MIGRATION CONFIGURATION
 
 # Install NFS kernel server.
 package "nfs-kernel-server" do
     action [:nothing]
-    only_if { node[:calico][:configure_nfs] }
+    only_if { node[:calico][:live_migrate] }
     notifies :run, "ruby_block[configure-idmapd]", :immediately
     notifies :create_if_missing, "directory[/var/lib/nova_share]", :immediately
     notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
