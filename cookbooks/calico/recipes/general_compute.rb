@@ -386,14 +386,18 @@ ruby_block "fix-nova-files" do
     notifies :run, "execute[fix-nova-files-gid]", :immediately
 end
 
+# It can take some time for all resources to stop using nova, so allow retries
+# if this command fails.
 execute "set-nova-uid" do
     action [:nothing]
     command "usermod -u #{controller[:nova_uid]} nova"
+    retries 5
 end
 
 execute "set-nova-gid" do
     action [:nothing]
     command "groupmod -g #{controller[:nova_gid]} nova"
+    retries 5
 end
     
 execute "fix-nova-files-uid" do
