@@ -385,8 +385,8 @@ end
 ruby_block "fix-nova-files" do
     action [:nothing]
     block do
-        print "Current Nova UID: " + node[:nova_uid] + "\n"
-        print "Current Nova GUI: " + node[:nova_gid] + "\n"
+        print "Current Nova UID: " + node["nova_uid"] + "\n"
+        print "Current Nova GUI: " + node["nova_gid"] + "\n"
     end
     notifies :run, "bash[fix-nova-files-uid]", :immediately
     notifies :run, "bash[fix-nova-files-gid]", :immediately
@@ -394,12 +394,12 @@ end
     
 bash "fix-nova-files-uid" do
     action [:nothing]
-    command "find / -uid " + node[:nova_uid] + " -exec chown nova {}"
+    command "find / -uid " + node["nova_uid"] + " -exec chown nova {}"
 end
 
 bash "fix-nova-files-gid" do
     action [:nothing]
-    command "find / -gid " + node[:nova_gid] + " -exec chgrp nova {}"
+    command "find / -gid " + node["nova_gid"] + " -exec chgrp nova {}"
 end
 
 # Install NFS kernel server.
