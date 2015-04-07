@@ -411,13 +411,13 @@ end
 directory "/var/lib/nova_share" do
     owner "nova"
     group "nova"
-    mode "0777"
+    mode "0755"
     action [:nothing]
 end
 directory "/var/lib/nova_share/instances" do
     owner "nova"
     group "nova"
-    mode "0777"
+    mode "0755"
     action [:nothing]
 end
 
