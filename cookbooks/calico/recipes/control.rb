@@ -388,7 +388,7 @@ template "/etc/nova/nova.conf" do
     source "control/nova.conf.erb"
     variables({
         admin_password: node[:calico][:admin_password],
-        live_migreate: node[:calico][:live_migrate]
+        live_migrate: node[:calico][:live_migrate]
     })
     owner "nova"
     group "nova"
@@ -489,8 +489,8 @@ ruby_block "store-nova-user-info" do
     block do
         output = ::File.read("/tmp/nova.user")	
         match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output)
-	node.set["nova_uid"] = match[:uid]
-	node.set["nova_gid"] = match[:gid]
+        node.set["nova_uid"] = match[:uid]
+        node.set["nova_gid"] = match[:gid]
     end
 end
 
@@ -769,7 +769,7 @@ end
 ruby_block "add-unrestricted-share" do
     block do
         file = Chef::Util::FileEdit.new("/etc/exports")
-	entry = "/var/lib/nova_share/instances *(rw,fsid=0,insecure,no_subtree_check,async,no_root_squash)"
+        entry = "/var/lib/nova_share/instances *(rw,fsid=0,insecure,no_subtree_check,async,no_root_squash)"
         file.insert_line_if_no_match(/#{entry}/, entry)
         file.write_file
     end

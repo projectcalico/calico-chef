@@ -355,10 +355,10 @@ ruby_block "update-libvirt" do
         file.insert_line_if_no_match(/.*listen_tls.*/, "listen_tls=0")
         file.insert_line_if_no_match(/.*listen_tcp.*/, "listen_tcp=1")
         file.insert_line_if_no_match(/.*auth_tcp.*/, "auth_tcp=\"none\"")
-	file.write_file
-	file = Chef::Util::FileEdit.new("/etc/default/libvirt-bin")
-	file.search_file_replace_line(/libvirtd_opts\s*=\s*\".*/, "libvirtd_opts=\" -d -l\"")
-	file.write_file
+        file.write_file
+        file = Chef::Util::FileEdit.new("/etc/default/libvirt-bin")
+        file.search_file_replace_line(/libvirtd_opts\s*=\s*\".*/, "libvirtd_opts=\" -d -l\"")
+        file.write_file
         file = Chef::Util::FileEdit.new("/etc/init/libvirt-bin.conf")
         file.search_file_replace_line(/\s*env\s*libvirtd_opts\s*=\s*\".*/, "env libvirtd_opts=\" -d -l\"")
         file.write_file
