@@ -4,14 +4,12 @@ controller = search(:node, "role:controller")[0][:fqdn]
 # Find the BGP neighbors, which is everyone except ourselves.
 bgp_neighbors = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
 
-# Overwrite chef's IPv6 address assignment because it's wrong.
-bgp_neighbors.each do |neighbor|
-    addresses = neighbor[:network][:interfaces][:eth0][:addresses]
-    global_ipv6 = addresses.select do |address|
-        address[:family] == 'inet6' && address[:scope] == 'Global'
-    end
-    neighbor[:ip6address] = global_ipv6.keys.sort[0].to_s
+# Overwrite chef's IPv6 address assignment because there's more than one to choose from.
+addresses = node[:network][:interfaces][:eth0][:addresses]
+global_ipv6 = addresses.select do |address|
+    address[:family] == 'inet6' && address[:scope] == 'Global'
 end
+node[:ip6address] = global_ipv6.keys.sort[0].to_s
 
 # Tell apt about the Calico repository server.
 template "/etc/apt/sources.list.d/calico.list" do
