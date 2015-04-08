@@ -42,28 +42,17 @@ end
 # ipv6.eth0.forwarding=0: additional config in case kernel doesn't support
 #                    accept_ra=2.  Forwarding will still be enabled
 #                    due to the ipv6.all config.
-bash "config-sysctl" do
-    user "root"
-    code <<-EOH
-    sysctl net.ipv4.conf.all.forwarding=1
-    sysctl net.ipv6.conf.all.forwarding=1
-    sysctl net.ipv6.conf.all.accept_ra=2
-    sysctl net.ipv6.conf.eth0.forwarding=0
-    EOH
+cookbook_file "/etc/sysctl.conf" do
+    source "sysctl.conf"
+    mode "0644"
+    owner "root"
+    group "root"
+    notifies :run, "execute[read-sysctl]", :immediately
 end
-ruby_block "persist-sysctl" do
-     block do
-         file = Chef::Util::FileEdit.new("/etc/sysctl.conf")
-         file.search_file_replace_line(/.*net\.ipv4\.conf\.all\.forwarding.*/, "net.ipv4.conf.all.forwarding=1")
-         file.search_file_replace_line(/.*net\.ipv6\.conf\.all\.forwarding.*/, "net.ipv6.conf.all.forwarding=1")
-         file.search_file_replace_line(/.*net\.ipv6\.conf\.all\.accept_ra.*/, "net.ipv6.conf.all.accept_ra=2")
-         file.search_file_replace_line(/.*net\.ipv6\.conf\.eth0\.forwarding.*/, "net.ipv6.conf.eth0.forwarding=0")
-         file.insert_line_if_no_match(/.*net\.ipv4\.conf\.all\.forwarding.*/, "net.ipv4.conf.all.forwarding=1")
-         file.insert_line_if_no_match(/.*net\.ipv6\.conf\.all\.forwarding.*/, "net.ipv6.conf.all.forwarding=1")
-         file.insert_line_if_no_match(/.*net\.ipv6\.conf\.all\.accept_ra.*/, "net.ipv6.conf.all.accept_ra=2")
-         file.insert_line_if_no_match(/.*net\.ipv6\.conf\.eth0\.forwarding.*/, "net.ipv6.conf.eth0.forwarding=0")
-         file.write_file
-     end 
+execute "read-sysctl" do
+    user "root"
+    command "sysctl -p"
+    action [:nothing]
 end 
 
 # Install a few needed packages.
