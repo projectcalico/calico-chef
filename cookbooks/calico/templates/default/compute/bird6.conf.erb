@@ -44,13 +44,13 @@ protocol direct {
 protocol bgp <%= n[:fqdn].gsub(/[^0-9a-z]/i, '') %> {
   description "Connection to BGP route reflector";
   local as 64511;
-  neighbor <%= n[:bgp_ip6address] %> as 64511;
+  neighbor <%= get_ipv6.call(n) %> as 64511;
   multihop;
   import all;
   export all;
   next hop self;    # Disable next hop processing and always advertise our
                     # local address as nexthop
-  source address <%= node[:bgp_ip6address] %>;  # The local address we use for the TCP connection
+  source address <%= get_ipv6.call(node) %>;  # The local address we use for the TCP connection
 }
 
 <% end %>
