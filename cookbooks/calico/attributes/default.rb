@@ -6,3 +6,7 @@ default["calico"]["admin_token"]    = "abcdef"
 # them. By default we install from the release versions.
 default["calico"]["package_source"] = "http://binaries.projectcalico.org/repo ./"
 default["calico"]["package_key"]    = "http://binaries.projectcalico.org/repo/key"
+
+# Whether the demonstration will allow live migration.  Note that seting this
+# to true will set up an unprotected NFS mount across all nodes.
+default["calico"]["live_migrate"] = false

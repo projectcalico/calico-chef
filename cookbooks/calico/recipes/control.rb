@@ -34,6 +34,28 @@ package "ntp" do
     action [:install]
 end
 
+# Configure sysctl so that forwarding is enabled, and router solicitations
+# are accepted.  Allows SLAAC to provide an IPv6 address to the 
+# control node without disabling forwarding. 
+# ipv4.all.forwarding=1: enable IPv4 forwarding.
+# ipv6.all.forwarding=1: enable IPv6 forwarding.
+# ipv6.all.accept_ra=2: allow router solicitations/advertisements.
+# ipv6.eth0.forwarding=0: additional config in case kernel doesn't support
+#                    accept_ra=2.  Forwarding will still be enabled
+#                    due to the ipv6.all config.
+cookbook_file "/etc/sysctl.conf" do
+    source "sysctl.conf"
+    mode "0644"
+    owner "root"
+    group "root"
+    notifies :run, "execute[read-sysctl]", :immediately
+end
+execute "read-sysctl" do
+    user "root"
+    command "sysctl -p"
+    action [:nothing]
+end 
+
 # Installing MySQL is a pain. We can't use the OpenStack cookbook because it
 # lacks features we need, so we need to do it by hand. First, prevent Ubuntu
 # from asking us questions when we install the package. Then, install the
@@ -173,7 +195,6 @@ bash "initial-keystone" do
     EOH
 end
 
-
 # CLIENTS
 
 package "python-cinderclient" do
@@ -226,6 +247,7 @@ ruby_block "environments" do
     end
     action :create
 end
+
 
 # GLANCE
 
@@ -339,9 +361,6 @@ end
 package "nova-cert" do
     action [:install]
 end
-package "nova-conductor" do
-    action [:install]
-end
 package "nova-consoleauth" do
     action [:install]
 end
@@ -353,12 +372,29 @@ package "nova-scheduler" do
     notifies :create, "template[/etc/nova/nova.conf]", :immediately
     notifies :run, "execute[remove-old-nova-db]", :immediately
 end
+template "/etc/nova/nova.conf" do
+    mode "0640"
+    source "control/nova.conf.erb"
+    variables({
+        admin_password: node[:calico][:admin_password],
+        live_migrate: node[:calico][:live_migrate]
+    })
+    owner "nova"
+    group "nova"
+    notifies :install, "package[nfs-kernel-server]", :immediately
+    notifies :restart, "service[nova-api]", :immediately
+    notifies :restart, "service[nova-cert]", :immediately
+    notifies :restart, "service[nova-consoleauth]", :immediately
+    notifies :restart, "service[nova-scheduler]", :immediately
+    notifies :restart, "service[nova-novncproxy]", :immediately
+end
 
 execute "remove-old-nova-db" do
     action [:nothing]
     command "rm /var/lib/nova/nova.sqlite"
     notifies :run, "bash[nova-db-setup]", :immediately
 end
+
 bash "nova-db-setup" do
     action [:nothing]
     user "root"
@@ -375,8 +411,16 @@ end
 execute "nova-manage db sync" do
     action [:nothing]
     user "nova"
+    notifies :install, "package[nova-conductor]", :immediately
+end
+
+# Install conductor after syncing the database - if conductor is running during the resync
+# it is possible to hit window conditions adding duplicate entries to the DB.
+package "nova-conductor" do
+    action [:nothing]
     notifies :run, "bash[initial-nova]", :immediately
 end
+
 bash "initial-nova" do
     action [:nothing]
     user "root"
@@ -395,21 +439,6 @@ bash "initial-nova" do
     notifies :restart, "service[nova-scheduler]", :immediately
 end
 
-template "/etc/nova/nova.conf" do
-    mode "0640"
-    source "control/nova.conf.erb"
-    variables({
-        admin_password: node[:calico][:admin_password]
-    })
-    owner "nova"
-    group "nova"
-    notifies :restart, "service[nova-api]", :immediately
-    notifies :restart, "service[nova-cert]", :immediately
-    notifies :restart, "service[nova-consoleauth]", :immediately
-    notifies :restart, "service[nova-scheduler]", :immediately
-    notifies :restart, "service[nova-conductor]", :immediately
-    notifies :restart, "service[nova-novncproxy]", :immediately
-end
 service "nova-api" do
     provider Chef::Provider::Service::Upstart
     supports :restart => true
@@ -439,6 +468,19 @@ service "nova-novncproxy" do
     provider Chef::Provider::Service::Upstart
     supports :restart => true
     action [:nothing]
+end
+
+# Output and store the UID and GID for nova - this may be required for live migration
+execute "get-nova-info" do
+    command "id nova >> /tmp/nova.user"
+end
+ruby_block "store-nova-user-info" do
+    block do
+        output = ::File.read("/tmp/nova.user")	
+        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output)
+        node.set["nova_uid"] = match[:uid]
+        node.set["nova_gid"] = match[:gid]
+    end
 end
 
 
@@ -501,19 +543,6 @@ service "neutron-server" do
     action [:nothing]
 end
 
-bash "basic-networks" do
-    action [:run]
-    user "root"
-    environment node["run_env"]
-    code <<-EOH
-    neutron net-create demo-net --shared
-    neutron subnet-create demo-net --name demo-subnet \
-      --gateway 10.28.0.1 10.28.0.0/16
-    neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
-      --gateway fd5f:5d21:845:1c2e:2::1 fd5f:5d21:845:1c2e:2::/80 
-    EOH
-    not_if "neutron net-list | grep demo-net"
-end
 
 # HORIZON
 
@@ -664,4 +693,87 @@ template "/etc/calico/acl_manager.cfg" do
     owner "root"
     group "root"
     notifies :start, "service[calico-acl-manager]", :immediately
+end
+
+
+# DEPLOMENT SPECIFIC CONFIGURATION
+
+bash "basic-networks" do
+    action [:run]
+    user "root"
+    environment node["run_env"]
+    code <<-EOH
+    neutron net-create demo-net --shared
+    neutron subnet-create demo-net --name demo-subnet \
+      --gateway 10.28.0.1 10.28.0.0/16
+    neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
+      --gateway fd5f:5d21:845:1c2e:2::1 fd5f:5d21:845:1c2e:2::/80
+    EOH
+    not_if "neutron net-list | grep demo-net"
+end
+
+
+# LIVE MIGRATION CONFIGURATION
+
+# Install NFS kernel server.
+package "nfs-kernel-server" do
+    action [:nothing]
+    only_if { node[:calico][:live_migrate] }
+    notifies :run, "ruby_block[configure-idmapd]", :immediately
+    notifies :create_if_missing, "directory[/var/lib/nova_share]", :immediately
+    notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
+    notifies :run, "ruby_block[add-unrestricted-share]", :immediately
+    notifies :run, "execute[reload-nfs-cfg]", :immediately
+    notifies :restart, "service[nfs-kernel-server]", :immediately
+    notifies :restart, "service[idmapd]", :immediately
+end
+
+# Ensure idmapd configuration is correct
+ruby_block "configure-idmapd" do
+    block do
+        file = Chef::Util::FileEdit.new("/etc/idmapd.conf")
+        file.insert_line_if_no_match(/\[Mapping\]\s/, "[Mapping]")
+        file.insert_line_after_match(/\[Mapping\]\s/, "Nobody-Group = nogroup")
+        file.insert_line_after_match(/\[Mapping\]\s/, "Nobody-User = nobody")
+        file.write_file
+    end
+    action [:nothing]
+end
+
+# Create share point
+directory "/var/lib/nova_share" do
+    owner "nova"
+    group "nova"
+    mode "0755"
+    action [:nothing]
+end
+directory "/var/lib/nova_share/instances" do
+    owner "nova"
+    group "nova"
+    mode "0755"
+    action [:nothing]
+end
+
+# Add an unrestricted entry to the share point
+ruby_block "add-unrestricted-share" do
+    block do
+        file = Chef::Util::FileEdit.new("/etc/exports")
+        entry = "/var/lib/nova_share/instances *(rw,fsid=0,insecure,no_subtree_check,async,no_root_squash)"
+        file.insert_line_if_no_match(/#{entry}/, entry)
+        file.write_file
+    end
+    action [:nothing]
+end
+
+execute "reload-nfs-cfg" do
+    command "exportfs -r"
+    action [:nothing]
+end
+
+service "nfs-kernel-server" do
+    action [:nothing]
+end
+
+service "idmapd" do
+    action [:nothing]
 end

@@ -1,3 +1,9 @@
+<% if @live_migrate
+      @state_path = "/var/lib/nova_share"
+   else
+      @state_path = "/var/lib/nova"
+   end
+%>
 [DEFAULT]
 network_api_class = nova.network.neutronv2.api.API
 neutron_url = http://<%= node[:fqdn] %>:9696
@@ -23,7 +29,7 @@ glance_host = <%= node[:fqdn] %>
 dhcpbridge_flagfile=/etc/nova/nova.conf
 dhcpbridge=/usr/bin/nova-dhcpbridge
 logdir=/var/log/nova
-state_path=/var/lib/nova
+state_path=<%= @state_path %>
 lock_path=/var/lock/nova
 force_dhcp_release=True
 iscsi_helper=tgtadm

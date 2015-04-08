@@ -29,9 +29,10 @@ protocol direct {
 }
 
 # Peer with all neighbours.
-<% @bgp_neighbors.each do |n| %>
-protocol bgp <%= n[:fqdn].gsub(/[^0-9a-z]/i, '') %> {
-  description "Connection to BGP route reflector";
+<% @bgp_neighbors.each_with_index do |n, index| %>
+# <%= n[:fqdn] %>
+protocol bgp <%= "peer#{index}" %> {
+  description <%= "\"BGP Connection to #{n[:fqdn]}\"" %>;
   local as 64511;
   neighbor <%= n[:ipaddress] %> as 64511;
   multihop;
