@@ -5,11 +5,16 @@ controller = search(:node, "role:controller")[0][:fqdn]
 bgp_neighbors = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
 
 # Overwrite chef's IPv6 address assignment because there's more than one to choose from.
-addresses = node[:network][:interfaces][:eth0][:addresses]
-global_ipv6 = addresses.select do |address|
-    address[:family] == 'inet6' && address[:scope] == 'Global'
+ruby_block "assign-bgp-ipv6-address" do
+    block do
+        addresses = node[:network][:interfaces][:eth0][:addresses]
+        global_ipv6 = addresses.select do |address|
+            address[:family] == 'inet6' && address[:scope] == 'Global'
+        end
+        node[:bgp_ip6address] = global_ipv6.keys.sort[0].to_s
+    end
+    action [:nothing]
 end
-node[:ip6address] = global_ipv6.keys.sort[0].to_s
 
 # Tell apt about the Calico repository server.
 template "/etc/apt/sources.list.d/calico.list" do
@@ -181,6 +186,7 @@ end
 
 package "bird" do
     action [:install]
+    notifies :run, "assign-bgp-ipv6-address", :immediately
     notifies :create, "template[/etc/bird/bird.conf]", :immediately
     notifies :create, "template[/etc/bird/bird6.conf]", :immediately
 end

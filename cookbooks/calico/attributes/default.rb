@@ -7,3 +7,5 @@ default["calico"]["admin_token"]    = "abcdef"
 default["calico"]["package_source"] = "http://binaries.projectcalico.org/repo ./"
 default["calico"]["package_key"]    = "http://binaries.projectcalico.org/repo/key"
 
+# This will later be set to the IPv6 address to be advertised by BIRD.
+default["bgp_ip6address"] = nil
