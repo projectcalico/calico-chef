@@ -5,7 +5,7 @@ controller = search(:node, "role:controller")[0][:fqdn]
 bgp_neighbors = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
 
 # Grab the right IPv6 address because there's more than one to choose from.
-assign_ipv6 = Proc.new do |node|
+get_ipv6 = Proc.new do |node|
     addresses = node[:network][:interfaces][:eth0][:addresses]
     global_ipv6 = addresses.select do |address|
         address[:family] == 'inet6' && address[:scope] == 'Global'
@@ -210,7 +210,7 @@ template "/etc/bird/bird6.conf" do
     source "compute/bird6.conf.erb"
     variables({
         bgp_neighbors: bgp_neighbors,
-        assign_ipv6: assign_ipv6
+        get_ipv6: get_ipv6
     })
     owner "bird"
     group "bird"
