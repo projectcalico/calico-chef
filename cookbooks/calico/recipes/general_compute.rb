@@ -121,7 +121,7 @@ template "/etc/nova/nova.conf" do
     variables({
         admin_password: node[:calico][:admin_password],
         controller: controller[:fqdn],
-	live_migrate: node[:calico][:live_migrate]
+        live_migrate: node[:calico][:live_migrate]
     })
     owner "nova"
     group "nova"
@@ -205,8 +205,8 @@ ruby_block "load-compute-node-keys" do
         other_compute.each do |n|
             key = n['nova_public_key']
             file.insert_line_if_no_match(/#{key}/, key)
-	end
-	file.write_file
+        end
+        file.write_file
     end
 end
 
