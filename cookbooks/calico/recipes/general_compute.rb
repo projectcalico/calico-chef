@@ -6,6 +6,16 @@ controller = search(:node, "role:controller")[0]
 # nova authentication with.
 other_compute = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
 
+# Grab the right IPv6 address because there's more than one to choose from.
+get_ipv6 = Proc.new do |node|
+    addresses = node[:network][:interfaces][:eth0][:addresses]
+    global_ipv6 = addresses.select do |address, info|
+        info[:family] == 'inet6' && info[:scope] == 'Global'
+    end
+    global_ipv6.keys.sort[0].to_s
+end
+
+
 # Tell apt about the Calico repository server.
 template "/etc/apt/sources.list.d/calico.list" do
     mode "0644"
@@ -275,7 +285,8 @@ template "/etc/bird/bird6.conf" do
     mode "0640"
     source "compute/bird6.conf.erb"
     variables({
-        bgp_neighbors: other_compute
+        bgp_neighbors: other_compute,
+        get_ipv6: get_ipv6
     })
     owner "bird"
     group "bird"
