@@ -29,7 +29,7 @@ template "/etc/apt/sources.list.d/calico.list" do
 end
 execute "apt-key-calico" do
     user "root"
-    command "curl -L #{node[:calico][:package_key]} | sudo apt-key add -"
+    command "curl -L #{node[:calico][:package_key]} | apt-key add -"
     action :nothing
     notifies :run, "execute[apt-get update]", :immediately
 end
@@ -169,8 +169,8 @@ end
 
 # Create SSH key for nova user.
 execute "nova-ssh-keygen" do
-    user "root"
-    command "sudo -u nova ssh-keygen -q -t rsa -N '' -f /var/lib/nova/.ssh/id_rsa"
+    user "nova"
+    command "ssh-keygen -q -t rsa -N '' -f /var/lib/nova/.ssh/id_rsa"
     creates "/var/lib/nova/.ssh/id_rsa"
     not_if { ::File.exists?("/var/lib/nova/.ssh/id_rsa")}
 end 
