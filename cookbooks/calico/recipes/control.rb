@@ -677,6 +677,9 @@ end
 
 # CALICO
 
+package "python-etcd" do
+    action :install
+end
 package "etcd" do
     action :install
 end
