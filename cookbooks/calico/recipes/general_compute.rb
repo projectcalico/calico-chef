@@ -12,6 +12,11 @@ get_ipv6 = Proc.new do |node|
     global_ipv6 = addresses.select do |address, info|
         info[:family] == 'inet6' && info[:scope] == 'Global'
     end
+    if global_ipv6.empty?
+        global_ipv6 = addresses.select do |address, info|
+            info[:family] == 'inet6' && info[:scope] == 'Site'
+        end
+    end
     global_ipv6.keys.sort[0].to_s
 end
 
@@ -327,6 +332,7 @@ template "/etc/bird/bird6.conf" do
     })
     owner "bird"
     group "bird"
+    not_if { get_ipv6.call(node).empty? }
     notifies :restart, "service[bird6]", :delayed
 end
 
