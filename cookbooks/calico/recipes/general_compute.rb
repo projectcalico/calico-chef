@@ -332,6 +332,7 @@ template "/etc/bird/bird6.conf" do
     })
     owner "bird"
     group "bird"
+    not_if { get_ipv6.call(node).empty? }
     notifies :restart, "service[bird6]", :delayed
 end
 
