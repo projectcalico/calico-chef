@@ -12,7 +12,7 @@ get_ipv6 = Proc.new do |node|
     global_ipv6 = addresses.select do |address, info|
         info[:family] == 'inet6' && info[:scope] == 'Global'
     end
-    if global_ipv6.empty? :
+    if global_ipv6.empty?
         global_ipv6 = addresses.select do |address, info|
             info[:family] == 'inet6' && info[:scope] == 'Site'
         end
