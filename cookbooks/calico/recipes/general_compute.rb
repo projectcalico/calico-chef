@@ -1,5 +1,6 @@
 # Find the controller node and controller FQDN.
 controller = search(:node, "role:controller")[0]
+controller_ip = search(:node, "role:controller")[0][:ipaddress]
 
 # Find the other compute nodes.  This is everyone except ourselves.
 # These are both our BGP neighbors and a list of nodes that we need to share passwordless
@@ -42,10 +43,18 @@ template "/etc/apt/preferences" do
         package_host: URI.parse(node[:calico][:package_source].split[0]).host
     })
 end
+apt_repository "calico-ppa" do
+    uri node[:calico][:etcd_ppa]
+    distribution node["lsb"]["codename"]
+    components ["main"]
+    keyserver "keyserver.ubuntu.com"
+    key node[:calico][:etcd_ppa_fingerprint]
+    notifies :run, "execute[apt-get update]", :immediately
+end
 
 # Configure sysctl so that forwarding is enabled, and router solicitations
 # are accepted.  Allows SLAAC to provide an IPv6 address to each compute
-# node without disabling forwarding. 
+# node without disabling forwarding.
 # ipv4.all.forwarding=1: enable IPv4 forwarding.
 # ipv6.all.forwarding=1: enable IPv6 forwarding.
 # ipv6.all.accept_ra=2: allow router solicitations/advertisements.
@@ -63,7 +72,7 @@ execute "read-sysctl" do
     user "root"
     command "sysctl -p"
     action [:nothing]
-end 
+end
 
 # Install a few needed packages.
 package "ntp" do
@@ -173,7 +182,7 @@ execute "nova-ssh-keygen" do
     command "ssh-keygen -q -t rsa -N '' -f /var/lib/nova/.ssh/id_rsa"
     creates "/var/lib/nova/.ssh/id_rsa"
     not_if { ::File.exists?("/var/lib/nova/.ssh/id_rsa")}
-end 
+end
 
 # Create authorized keys file for nova.
 file "/var/lib/nova/.ssh/authorized_keys" do
@@ -264,6 +273,35 @@ package "bird" do
     notifies :create, "template[/etc/bird/bird6.conf]", :immediately
 end
 
+# Install etcd and friends.
+package "python-etcd" do
+    action :install
+end
+package "etcd" do
+    action :install
+end
+template "/etc/init/etcd.conf" do
+    mode "0640"
+    source "compute/etcd.conf.erb"
+    variables({
+        controller: controller,
+        controller_ip: controller_ip
+    })
+    owner "root"
+    group "root"
+    notifies :run, "bash[etcd-setup]", :immediately
+end
+
+# This action removes the etcd database and restarts it.
+bash "etcd-setup" do
+    action [:nothing]
+    user "root"
+    code <<-EOH
+    rm -rf /var/lib/etcd/*
+    service etcd restart
+    EOH
+end
+
 package "calico-compute" do
     action [:install]
     notifies :restart, "service[libvirt-bin]", :delayed
@@ -321,7 +359,7 @@ template "/etc/calico/felix.cfg" do
     notifies :start, "service[calico-felix]", :immediately
 end
 
-# LIVE MIGRATION CONFIGURATION 
+# LIVE MIGRATION CONFIGURATION
 
 # Kick off the set of live migration tasks.  Start by getting the nova and
 # gid and uid.  We need to ensure these are the same across all nodes.
@@ -368,7 +406,7 @@ end
 ruby_block "fix-nova-files" do
     action [:nothing]
     block do
-        output = ::File.read("/tmp/nova.user")                
+        output = ::File.read("/tmp/nova.user")
         match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output)
         node.set["nova_uid"] = match[:uid]
         node.set["nova_gid"] = match[:gid]
@@ -392,7 +430,7 @@ execute "set-nova-gid" do
     command "groupmod -g #{controller[:nova_gid]} nova"
     retries 5
 end
-    
+
 execute "fix-nova-files-uid" do
     action [:nothing]
     command lazy { "find / -path /proc -prune -o -uid #{node[:nova_uid]} -exec chown nova {} \\;" }

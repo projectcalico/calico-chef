@@ -28,6 +28,14 @@ template "/etc/apt/preferences" do
         package_host: URI.parse(node[:calico][:package_source].split[0]).host
     })
 end
+apt_repository "calico-ppa" do
+    uri node[:calico][:etcd_ppa]
+    distribution node["lsb"]["codename"]
+    components ["main"]
+    keyserver "keyserver.ubuntu.com"
+    key node[:calico][:etcd_ppa_fingerprint]
+    notifies :run, "execute[apt-get update]", :immediately
+end
 
 # Install NTP.
 package "ntp" do
@@ -35,8 +43,8 @@ package "ntp" do
 end
 
 # Configure sysctl so that forwarding is enabled, and router solicitations
-# are accepted.  Allows SLAAC to provide an IPv6 address to the 
-# control node without disabling forwarding. 
+# are accepted.  Allows SLAAC to provide an IPv6 address to the
+# control node without disabling forwarding.
 # ipv4.all.forwarding=1: enable IPv4 forwarding.
 # ipv6.all.forwarding=1: enable IPv6 forwarding.
 # ipv6.all.accept_ra=2: allow router solicitations/advertisements.
@@ -54,7 +62,7 @@ execute "read-sysctl" do
     user "root"
     command "sysctl -p"
     action [:nothing]
-end 
+end
 
 # Installing MySQL is a pain. We can't use the OpenStack cookbook because it
 # lacks features we need, so we need to do it by hand. First, prevent Ubuntu
@@ -668,6 +676,27 @@ end
 
 
 # CALICO
+
+package "etcd" do
+    action :install
+end
+template "/etc/init/etcd.conf" do
+    mode "0640"
+    source "control/etcd.conf.erb"
+    owner "root"
+    group "root"
+    notifies :run, "bash[etcd-setup]", :immediately
+end
+
+# This action removes the etcd database and restarts it.
+bash "etcd-setup" do
+    action [:nothing]
+    user "root"
+    code <<-EOH
+    rm -rf /var/lib/etcd/*
+    service etcd restart
+    EOH
+end
 
 package "calico-control" do
     action :install
