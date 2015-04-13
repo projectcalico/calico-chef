@@ -1,6 +1,5 @@
-# Find the controller node and controller FQDN.
+# Find the controller node.  We use its FQDN and IP address below.
 controller = search(:node, "role:controller")[0]
-controller_ip = search(:node, "role:controller")[0][:ipaddress]
 
 # Find the other compute nodes.  This is everyone except ourselves.
 # These are both our BGP neighbors and a list of nodes that we need to share passwordless
@@ -284,8 +283,8 @@ template "/etc/init/etcd.conf" do
     mode "0640"
     source "compute/etcd.conf.erb"
     variables({
-        controller: controller,
-        controller_ip: controller_ip
+        controller: controller[:fqdn],
+        controller_ip: controller[:ipaddress]
     })
     owner "root"
     group "root"
