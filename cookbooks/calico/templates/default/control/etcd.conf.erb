@@ -12,11 +12,11 @@ setuid etcd
 env ETCD_DATA_DIR=/var/lib/etcd
 export ETCD_DATA_DIR
 
-exec /usr/bin/etcd -name <%= node[:fqdn].gsub(/[^0-9a-z]/i, '') %>                                                      \
-                   -advertise-client-urls <%= "http://#{node[:ipaddress]}:2379,http://#{node[:ipaddress]}:4001" %>      \
-                   -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001                                          \
-                   -listen-peer-urls http://0.0.0.0:2380                                                                \
-                   -initial-advertise-peer-urls <%= "http://#{node[:ipaddress]}:2380" %>                                \
-                   -initial-cluster-token chef-cluster-1                                                                \
-                   -initial-cluster <%= "#{node[:fqdn].gsub(/[^0-9a-z]/i, '')}=http://#{node[:ipaddress]}:2380" %>      \
-                   -initial-cluster-state new
+exec /usr/bin/etcd --name <%= node[:fqdn].gsub(/[^0-9a-z]/i, '') %>                                                      \
+                   --advertise-client-urls <%= "http://#{node[:ipaddress]}:2379,http://#{node[:ipaddress]}:4001" %>      \
+                   --listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001                                          \
+                   --listen-peer-urls http://0.0.0.0:2380                                                                \
+                   --initial-advertise-peer-urls <%= "http://#{node[:ipaddress]}:2380" %>                                \
+                   --initial-cluster-token chef-cluster-1                                                                \
+                   --initial-cluster <%= "#{node[:fqdn].gsub(/[^0-9a-z]/i, '')}=http://#{node[:ipaddress]}:2380" %>      \
+                   --initial-cluster-state new
