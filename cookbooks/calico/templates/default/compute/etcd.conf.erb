@@ -12,6 +12,6 @@ setuid etcd
 env ETCD_DATA_DIR=/var/lib/etcd
 export ETCD_DATA_DIR
 
-exec /usr/bin/etcd -proxy on                                                  \
-                   -listen-client-urls http://127.0.0.1:4001                  \
-                   -initial-cluster <%= "#{@controller.gsub(/[^0-9a-z]/i, '')}=http://#{@controller_ip}:2380" %>
+exec /usr/bin/etcd --proxy on                                                  \
+                   --listen-client-urls http://127.0.0.1:4001                  \
+                   --initial-cluster <%= "#{@controller.gsub(/[^0-9a-z]/i, '')}=http://#{@controller_ip}:2380" %>
