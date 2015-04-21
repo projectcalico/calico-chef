@@ -217,7 +217,9 @@ ruby_block "load-compute-node-keys" do
         file = Chef::Util::FileEdit.new("/var/lib/nova/.ssh/authorized_keys")
         other_compute.each do |n|
             key = n['nova_public_key']
-            file.insert_line_if_no_match(/#{key}/, key)
+            unless key.nil?
+                file.insert_line_if_no_match(/#{key}/, key)
+            end
         end
         file.write_file
     end
