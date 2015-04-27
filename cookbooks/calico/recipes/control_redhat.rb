@@ -3,38 +3,16 @@ require 'uri'
 # Find the BGP neighbors, which is everyone except ourselves.
 bgp_neighbors = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
 
-template "/etc/apt/sources.list.d/calico.list" do
+# Tell apt about the Calico repository server.
+template "/etc/yum.repos.d/calico.repo" do
     mode "0644"
-    source "calico.list.erb"
+    source "calico.repo.erb"
     owner "root"
     group "root"
     variables({
         package_source: node[:calico][:package_source],
     })
-    notifies :run, "execute[apt-key-calico]", :immediately
-end
-execute "apt-key-calico" do
-    user "root"
-    command "curl -L #{node[:calico][:package_key]} | sudo apt-key add -"
-    action :nothing
-    notifies :run, "execute[apt-get update]", :immediately
-end
-template "/etc/apt/preferences" do
-    mode "0644"
-    source "preferences.erb"
-    owner "root"
-    group "root"
-    variables({
-        package_host: URI.parse(node[:calico][:package_source].split[0]).host
-    })
-end
-apt_repository "calico-ppa" do
-    uri node[:calico][:etcd_ppa]
-    distribution node["lsb"]["codename"]
-    components ["main"]
-    keyserver "keyserver.ubuntu.com"
-    key node[:calico][:etcd_ppa_fingerprint]
-    notifies :run, "execute[apt-get update]", :immediately
+    # notifies :run, "execute[apt-key-calico]", :immediately
 end
 
 # Install NTP.
@@ -64,6 +42,7 @@ execute "read-sysctl" do
     action [:nothing]
 end
 
+# @@LR2 Need to convert this...
 # Installing MySQL is a pain. We can't use the OpenStack cookbook because it
 # lacks features we need, so we need to do it by hand. First, prevent Ubuntu
 # from asking us questions when we install the package. Then, install the
@@ -94,7 +73,7 @@ template "/etc/mysql/my.cnf" do
     notifies :restart, "service[mysql]", :immediately
 end
 service "mysql" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
@@ -170,7 +149,7 @@ template "/etc/keystone/keystone.conf" do
     notifies :restart, "service[keystone]", :immediately
 end
 service "keystone" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
@@ -328,12 +307,12 @@ template "/etc/glance/glance-registry.conf" do
     notifies :restart, "service[glance-registry]", :immediately
 end
 service "glance-api" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
 service "glance-registry" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
@@ -448,32 +427,32 @@ bash "initial-nova" do
 end
 
 service "nova-api" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
 service "nova-cert" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
 service "nova-consoleauth" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
 service "nova-scheduler" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
 service "nova-conductor" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
 service "nova-novncproxy" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
@@ -546,7 +525,7 @@ template "/etc/neutron/neutron.conf" do
     notifies :restart, "service[neutron-server]", :immediately
 end
 service "neutron-server" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
@@ -654,22 +633,22 @@ template "/etc/cinder/cinder.conf" do
     notifies :restart, "service[tgt]", :immediately
 end
 service "cinder-scheduler" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
 service "cinder-api" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
 service "cinder-volume" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
 service "tgt" do
-    provider Chef::Provider::Service::Upstart
+    provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
