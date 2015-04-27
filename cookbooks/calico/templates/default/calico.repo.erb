@@ -1,0 +1,9 @@
+[calico]
+name=Calico Repository
+baseurl=<%= @package_source %>
+enabled=1
+skip_if_unavailable=0
+gpgcheck=1
+gpgkey=<%= @package_source %>/key
+priority=97
+EOF

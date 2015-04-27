@@ -1,0 +1,10 @@
+description "BIRD Internet Routing Daemon"
+start on runlevel [2345]
+stop on runlevel [016]
+respawn
+pre-start script
+/usr/local/sbin/bird -p -c /etc/bird/bird.conf
+end script
+script
+/usr/local/sbin/bird -f -c /etc/bird/bird.conf
+end script
