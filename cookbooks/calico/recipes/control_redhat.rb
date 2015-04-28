@@ -42,21 +42,8 @@ execute "read-sysctl" do
     action [:nothing]
 end
 
-# @@LR2 Need to convert this...
-# Installing MySQL is a pain. We can't use the OpenStack cookbook because it
-# lacks features we need, so we need to do it by hand. First, prevent Ubuntu
-# from asking us questions when we install the package. Then, install the
-# package. With that done, setup config files and run setup scripts.
-bash "debconf" do
-    user "root"
-    code <<-EOH
-      debconf-set-selections <<< 'mysql-server mysql-server/root_password password #{node[:calico][:admin_password]}'
-      debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password #{node[:calico][:admin_password]}'
-      EOH
-    not_if do
-        File.exists?("/etc/mysql/my.cnf")
-    end
-end
+# mysql
+
 package "python-mysqldb" do
     action [:install]
 end
@@ -83,8 +70,10 @@ bash "configure-mysql" do
     code <<-EOH
 mysql_install_db
 mysql_secure_installation <<EOF
-#{node[:calico][:admin_password]}
-n
+
+Y
+{node[:calico][:admin_password]}
+{node[:calico][:admin_password]}
 Y
 Y
 Y
