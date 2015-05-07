@@ -45,10 +45,13 @@ end
 
 # mysql
 
-package "python-mysqldb" do
+package "MySQL-python" do
     action [:install]
 end
-package "mysql-server" do
+package "mariadb" do
+    action [:install]
+end
+package "mariadb-server" do
     action [:install]
     notifies :run, "bash[configure-mysql]", :immediately
 end
