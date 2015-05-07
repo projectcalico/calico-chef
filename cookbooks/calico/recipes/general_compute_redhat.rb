@@ -59,7 +59,7 @@ end
 package "ntp" do
     action [:install]
 end
-package "python-mysqldb" do
+package "MySQL-python" do
     action [:install]
 end
 
