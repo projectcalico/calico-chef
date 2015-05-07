@@ -11,6 +11,7 @@ template "/etc/yum.repos.d/calico.repo" do
     group "root"
     variables({
         package_source: node[:calico][:package_source],
+        package_key: node[:calico][:package_key],
     })
     # notifies :run, "execute[apt-key-calico]", :immediately
 end
