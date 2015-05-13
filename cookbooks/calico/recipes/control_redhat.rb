@@ -56,7 +56,7 @@ package "mariadb-server" do
     notifies :run, "bash[configure-mysql]", :immediately
 end
 
-template "/etc/mysql/my.cnf" do
+template "/etc/my.cnf" do
     mode "0644"
     source "control/my.cnf.erb"
     owner "root"
