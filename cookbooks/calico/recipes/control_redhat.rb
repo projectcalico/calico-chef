@@ -539,7 +539,7 @@ template "/etc/neutron/neutron.conf" do
     group "neutron"
     notifies :restart, "service[openstack-neutron-server]", :immediately
 end
-service "neutron-server" do
+service "openstack-neutron-server" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
