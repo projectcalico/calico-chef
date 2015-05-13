@@ -343,7 +343,7 @@ bash "cirros-image" do
     user "root"
     environment node["run_env"]
     code <<-EOH
-    wget http://calico-jenkins/images/cirros-0.3.2-x86_64-disk.img -O - | glance image-create --name=cirros-0.3.2-x86_64 --disk-format=qcow2 \
+    wget http://calico-jenkins.datcon.co.uk/images/cirros-0.3.2-x86_64-disk.img -O - | glance image-create --name=cirros-0.3.2-x86_64 --disk-format=qcow2 \
       --container-format=bare --is-public=true
     EOH
     not_if "glance image-list | grep cirros"
