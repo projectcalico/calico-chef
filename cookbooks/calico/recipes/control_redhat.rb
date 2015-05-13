@@ -47,9 +47,9 @@ end
 #package "yum-plugin-priorities" do
 #    action [:install]
 #end
-package "http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm" do
-    action [:install]
-end
+#package "http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm" do
+#    action [:install]
+#end
 
 # Enable Openstack repo
 package "http://rdo.fedorapeople.org/openstack-juno/rdo-release-juno.rpm" do
