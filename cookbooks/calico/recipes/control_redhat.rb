@@ -43,15 +43,31 @@ execute "read-sysctl" do
     action [:nothing]
 end
 
-# mysql
+# Prereqs
+package "yum-plugin-priorities" do
+    action [:install]
+end
+package "http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm" do
+    action [:install]
+end
 
-package "MySQL-python" do
+# Enable Openstack repo
+package "http://rdo.fedorapeople.org/openstack-juno/rdo-release-juno.rpm" do
     action [:install]
 end
-package "mariadb" do
+
+# yum upgrade
+package "" do
+    action[:upgrade]
+end
+
+# install selinux
+package "openstack-selinux" do
     action [:install]
 end
-package "mariadb-server" do
+
+# mysql
+package ['MySQL-python', 'mariadb', 'mariadb-server'] do
     action [:install]
     notifies :run, "bash[configure-mysql]", :immediately
 end
@@ -61,18 +77,19 @@ template "/etc/my.cnf" do
     source "control/my.cnf.erb"
     owner "root"
     group "root"
-    notifies :restart, "service[mysql]", :immediately
+    notifies :restart, "service[mariadb]", :immediately
 end
-service "mysql" do
+
+service "mariadb" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
+
 bash "configure-mysql" do
     action [:nothing]
     user "root"
     code <<-EOH
-mysql_install_db
 mysql_secure_installation <<EOF
 
 Y
@@ -94,6 +111,11 @@ end
 execute "configure-rabbit" do
     action [:nothing]
     command "rabbitmqctl change_password guest #{node[:calico][:admin_password]}"
+end
+service "rabbitmq-server" do
+    provider Chef::Provider::Service::Systemd
+    supports :restart => true
+    action [:nothing]
 end
 
 
@@ -123,6 +145,11 @@ exit
       EOH
     notifies :run, "execute[keystone-manage db_sync]", :immediately
 end
+
+package ['openstack-keystone', 'python-keystoneclient'] do
+    action [:install]
+end
+
 execute "keystone-manage db_sync" do
     action [:nothing]
     user "keystone"
@@ -141,7 +168,8 @@ template "/etc/keystone/keystone.conf" do
     group "keystone"
     notifies :restart, "service[keystone]", :immediately
 end
-service "keystone" do
+
+service "openstack-keystone" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
@@ -231,9 +259,8 @@ end
 
 # GLANCE
 
-package "glance" do
+package ['openstack-glance', 'python-glanceclient'] do
     action [:install]
-    notifies :install, "package[python-glanceclient]", :immediately
     notifies :create, "template[/etc/glance/glance-api.conf]", :immediately
     notifies :create, "template[/etc/glance/glance-registry.conf]", :immediately
     notifies :run, "execute[remove-old-glance-db]", :immediately
@@ -299,12 +326,12 @@ template "/etc/glance/glance-registry.conf" do
     group "glance"
     notifies :restart, "service[glance-registry]", :immediately
 end
-service "glance-api" do
+service "openstack-glance-api" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-service "glance-registry" do
+service "openstack-glance-registry" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
@@ -335,19 +362,19 @@ end
 
 # NOVA
 
-package "nova-api" do
+package "openstack-nova-api" do
     action [:install]
 end
-package "nova-cert" do
+package "openstack-nova-cert" do
     action [:install]
 end
-package "nova-consoleauth" do
+package "openstack-nova-console" do
     action [:install]
 end
-package "nova-novncproxy" do
+package "openstack-nova-novncproxy" do
     action [:install]
 end
-package "nova-scheduler" do
+package "openstack-nova-scheduler" do
     action [:install]
     notifies :create, "template[/etc/nova/nova.conf]", :immediately
     notifies :run, "execute[remove-old-nova-db]", :immediately
@@ -391,12 +418,12 @@ end
 execute "nova-manage db sync" do
     action [:nothing]
     user "nova"
-    notifies :install, "package[nova-conductor]", :immediately
+    notifies :install, "package[openstack-nova-conductor]", :immediately
 end
 
 # Install conductor after syncing the database - if conductor is running during the resync
 # it is possible to hit window conditions adding duplicate entries to the DB.
-package "nova-conductor" do
+package "openstack-nova-conductor" do
     action [:nothing]
     notifies :run, "bash[initial-nova]", :immediately
 end
@@ -419,32 +446,32 @@ bash "initial-nova" do
     notifies :restart, "service[nova-scheduler]", :immediately
 end
 
-service "nova-api" do
+service "openstack-nova-api" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-service "nova-cert" do
+service "openstack-nova-cert" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-service "nova-consoleauth" do
+service "openstack-nova-consoleauth" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-service "nova-scheduler" do
+service "openstack-nova-scheduler" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-service "nova-conductor" do
+service "openstack-nova-conductor" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-service "nova-novncproxy" do
+service "openstack-nova-novncproxy" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
@@ -466,13 +493,13 @@ end
 
 # NEUTRON
 
-package "neutron-server" do
+package "openstack-neutron-server" do
     action [:install]
-    notifies :install, "package[neutron-plugin-ml2]", :immediately
+    notifies :install, "package[openstack-neutron-plugin-ml2]", :immediately
     notifies :create, "template[/etc/neutron/neutron.conf]", :immediately
     notifies :run, "bash[neutron-db-setup]", :immediately
 end
-package "neutron-plugin-ml2" do
+package "openstack-neutron-plugin-ml2" do
     action [:install]
 end
 bash "neutron-db-setup" do
@@ -526,36 +553,40 @@ end
 
 # HORIZON
 
-package "apache2" do
+package "openstack-dashboard" do
+    action [:install]
+end
+package "httpd" do
+    action [:install]
+end
+package "mod_wsgi" do
     action [:install]
 end
 package "memcached" do
     action [:install]
 end
-package "libapache2-mod-wsgi" do
+package "python-memcached" do
     action [:install]
-end
-package "openstack-dashboard" do
-    action [:install]
-end
-package "openstack-dashboard-ubuntu-theme" do
-    action [:purge]
 end
 
 
 # CINDER
 
-package "cinder-api" do
+package "openstack-cinder" do
     action [:install]
 end
-package "cinder-volume" do
-    action [:install]
-end
-package "cinder-scheduler" do
+package "openstack-cinderclient" do
     action [:install]
     notifies :create, "template[/etc/cinder/cinder.conf]", :immediately
     notifies :run, "bash[cinder-db-setup]", :immediately
 end
+package "python-oslo-db" do
+    action [:install]
+end
+package "targetcli" do
+    action [:install]
+end
+
 bash "cinder-db-setup" do
     action [:nothing]
     user "root"
@@ -625,22 +656,28 @@ template "/etc/cinder/cinder.conf" do
     notifies :restart, "service[cinder-volume]", :immediately
     notifies :restart, "service[tgt]", :immediately
 end
-service "cinder-scheduler" do
+service "lvm2-lvmetad" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-service "cinder-api" do
+
+service "openstack-cinder-scheduler" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-service "cinder-volume" do
+service "openstack-cinder-api" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-service "tgt" do
+service "openstack-cinder-volume" do
+    provider Chef::Provider::Service::Systemd
+    supports :restart => true
+    action [:nothing]
+end
+service "target" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
@@ -649,9 +686,16 @@ end
 
 # CALICO
 
-package "python-etcd" do
+package "python-devel" do
     action :install
 end
+package "libffi-devel" do
+    action :install
+end
+package "openssl-devel" do
+    action :install
+end
+
 package "etcd" do
     action :install
 end
@@ -661,6 +705,7 @@ template "/etc/init/etcd.conf" do
     owner "root"
     group "root"
     notifies :run, "bash[etcd-setup]", :immediately
+    notifies :run, "bash[get-python-etcd]", :immediately
 end
 
 # This action removes the etcd database and restarts it.
@@ -670,6 +715,17 @@ bash "etcd-setup" do
     code <<-EOH
     rm -rf /var/lib/etcd/*
     service etcd restart
+    EOH
+end
+
+bash "get-python-etcd" do
+    action [:nothing]
+    user "root"
+    code <<-EOH
+    curl -L https://github.com/Metaswitch/python-etcd/archive/master.tar.gz -o python-etcd.tar.gz
+    tar xvf python-etcd.tar.gz
+    cd python-etcd-master
+    python setup.py install
     EOH
 end
 
