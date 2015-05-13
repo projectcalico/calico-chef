@@ -161,7 +161,7 @@ template "/etc/keystone/keystone.conf" do
     })
     owner "keystone"
     group "keystone"
-    notifies :restart, "service[keystone]", :immediately
+    notifies :restart, "service[openstack-keystone]", :immediately
 end
 
 service "openstack-keystone" do
