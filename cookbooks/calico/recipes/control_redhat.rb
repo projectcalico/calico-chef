@@ -52,9 +52,9 @@ end
 #end
 
 # Enable Openstack repo
-package "http://rdo.fedorapeople.org/openstack-juno/rdo-release-juno.rpm" do
-    action [:install]
-end
+#package "http://rdo.fedorapeople.org/openstack-juno/rdo-release-juno.rpm" do
+#    action [:install]
+#end
 
 # install selinux
 package "openstack-selinux" do
