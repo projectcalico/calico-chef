@@ -44,7 +44,13 @@ execute "read-sysctl" do
 end
 
 # mysql
-package ['MySQL-python', 'mariadb', 'mariadb-server'] do
+package "MySQL-python" do
+    action [:install]
+end
+package "mariadb" do
+    action [:install]
+end
+package "mariadb-server" do
     action [:install]
     notifies :run, "bash[configure-mysql]", :immediately
 end
@@ -123,7 +129,11 @@ exit
     notifies :run, "execute[keystone-manage db_sync]", :immediately
 end
 
-package ['openstack-keystone', 'python-keystoneclient'] do
+package "openstack-keystone" do
+    action [:install]
+end
+
+package "python-keystoneclient" do
     action [:install]
 end
 
@@ -235,8 +245,11 @@ end
 
 
 # GLANCE
+package "python-glanceclient" do
+    action [:install]
+end
 
-package ['openstack-glance', 'python-glanceclient'] do
+package "openstack-glance" do
     action [:install]
     notifies :create, "template[/etc/glance/glance-api.conf]", :immediately
     notifies :create, "template[/etc/glance/glance-registry.conf]", :immediately
