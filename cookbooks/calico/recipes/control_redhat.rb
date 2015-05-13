@@ -309,7 +309,7 @@ template "/etc/glance/glance-api.conf" do
     })
     owner "glance"
     group "glance"
-    notifies :restart, "service[glance-api]", :immediately
+    notifies :restart, "service[openstack-glance-api]", :immediately
 end
 template "/etc/glance/glance-registry.conf" do
     mode "0640"
@@ -319,7 +319,7 @@ template "/etc/glance/glance-registry.conf" do
     })
     owner "glance"
     group "glance"
-    notifies :restart, "service[glance-registry]", :immediately
+    notifies :restart, "service[openstack-glance-registry]", :immediately
 end
 service "openstack-glance-api" do
     provider Chef::Provider::Service::Systemd
@@ -384,11 +384,11 @@ template "/etc/nova/nova.conf" do
     owner "nova"
     group "nova"
     notifies :install, "package[nfs-kernel-server]", :immediately
-    notifies :restart, "service[nova-api]", :immediately
-    notifies :restart, "service[nova-cert]", :immediately
-    notifies :restart, "service[nova-consoleauth]", :immediately
-    notifies :restart, "service[nova-scheduler]", :immediately
-    notifies :restart, "service[nova-novncproxy]", :immediately
+    notifies :restart, "service[openstack-nova-api]", :immediately
+    notifies :restart, "service[openstack-nova-cert]", :immediately
+    notifies :restart, "service[openstack-nova-consoleauth]", :immediately
+    notifies :restart, "service[openstack-nova-scheduler]", :immediately
+    notifies :restart, "service[openstack-nova-novncproxy]", :immediately
 end
 
 execute "remove-old-nova-db" do
@@ -438,7 +438,7 @@ bash "initial-nova" do
       --internalurl=http://#{node[:fqdn]}:8774/v2/%\\(tenant_id\\)s \
       --adminurl=http://#{node[:fqdn]}:8774/v2/%\\(tenant_id\\)s
     EOH
-    notifies :restart, "service[nova-scheduler]", :immediately
+    notifies :restart, "service[openstack-nova-scheduler]", :immediately
 end
 
 service "openstack-nova-api" do
@@ -537,7 +537,7 @@ template "/etc/neutron/neutron.conf" do
     }
     owner "neutron"
     group "neutron"
-    notifies :restart, "service[neutron-server]", :immediately
+    notifies :restart, "service[openstack-neutron-server]", :immediately
 end
 service "neutron-server" do
     provider Chef::Provider::Service::Systemd
@@ -733,7 +733,7 @@ cookbook_file "/etc/neutron/plugins/ml2/ml2_conf.ini" do
     source "ml2_conf.ini"
     owner "root"
     group "neutron"
-    notifies :restart, "service[neutron-server]", :immediately
+    notifies :restart, "service[openstack-neutron-server]", :immediately
 end
 
 
