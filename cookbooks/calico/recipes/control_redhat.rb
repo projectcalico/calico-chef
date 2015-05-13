@@ -56,11 +56,6 @@ package "http://rdo.fedorapeople.org/openstack-juno/rdo-release-juno.rpm" do
     action [:install]
 end
 
-# yum upgrade
-package "" do
-    action[:upgrade]
-end
-
 # install selinux
 package "openstack-selinux" do
     action [:install]
