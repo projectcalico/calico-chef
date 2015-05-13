@@ -646,10 +646,10 @@ template "/etc/cinder/cinder.conf" do
     })
     owner "cinder"
     group "cinder"
-    notifies :restart, "service[cinder-scheduler]", :immediately
-    notifies :restart, "service[cinder-api]", :immediately
-    notifies :restart, "service[cinder-volume]", :immediately
-    notifies :restart, "service[tgt]", :immediately
+    notifies :restart, "service[openstack-cinder-scheduler]", :immediately
+    notifies :restart, "service[openstack-cinder-api]", :immediately
+    notifies :restart, "service[openstack-cinder-volume]", :immediately
+    notifies :restart, "service[target]", :immediately
 end
 service "lvm2-lvmetad" do
     provider Chef::Provider::Service::Systemd
