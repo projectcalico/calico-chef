@@ -150,12 +150,12 @@ package "openstack-keystone" do
     action [:install]
     notifies :create, "template[/etc/keystone/keystone.conf]", :immediately
     notifies :run, "execute[remove-old-keystone-db]", :immediately
-end
-execute "remove-old-keystone-db" do
-    action [:nothing]
-    command "rm /var/lib/keystone/keystone.db"
     notifies :run, "bash[keystone-db-setup]", :immediately
 end
+#execute "remove-old-keystone-db" do
+#    action [:nothing]
+#    command "rm /var/lib/keystone/keystone.db"
+#end
 bash "keystone-db-setup" do
     action [:nothing]
     user "root"
