@@ -131,6 +131,7 @@ end
 # Install the RabbitMQ server.
 package "rabbitmq-server" do
     action [:install]
+    notifies :restart, "service[rabbitmq-server]", :immediately
 end
 service "rabbitmq-server" do
     provider Chef::Provider::Service::Systemd
