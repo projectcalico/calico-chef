@@ -94,7 +94,6 @@ package "mariadb" do
 end
 package "mariadb-server" do
     action [:install]
-    notifies :run, "bash[configure-mysql]", :immediately
 end
 
 template "/etc/my.cnf" do
@@ -103,6 +102,7 @@ template "/etc/my.cnf" do
     owner "root"
     group "root"
     notifies :restart, "service[mariadb]", :immediately
+    notifies :run, "bash[configure-mysql]", :immediately
 end
 
 service "mariadb" do
