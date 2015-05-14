@@ -65,13 +65,13 @@ end
 yum_repository 'rhel-7-server-extras-rpms' do
   description 'Red Hat Enterprise Linux 7 Server - Extras (RPMs)'
   mirrorlist 'https://cdn.redhat.com/content/dist/rhel/server/7/7Server/$basearch/extras/os' 
-  enabled "true"
+  enabled true
   action :create
 end
 yum_repository 'rhel-7-server-optional-rpms' do
   description 'Red Hat Enterprise Linux 7 Server - Optional (RPMs)'
   mirrorlist 'https://cdn.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/optional/os' 
-  enabled "true"
+  enabled true
   notifies :run, "bash[subscribe]", :immediately
   action :create
 end
