@@ -149,7 +149,7 @@ end
 package "openstack-keystone" do
     action [:install]
     notifies :create, "template[/etc/keystone/keystone.conf]", :immediately
-    notifies :run, "execute[remove-old-keystone-db]", :immediately
+    #notifies :run, "execute[remove-old-keystone-db]", :immediately
     notifies :run, "bash[keystone-db-setup]", :immediately
 end
 #execute "remove-old-keystone-db" do
