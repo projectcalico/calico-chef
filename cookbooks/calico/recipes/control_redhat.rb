@@ -68,8 +68,13 @@ yum_repository 'rhel-7-server-optional-rpms' do
 end
 
 yum_repository 'rhel-7-server-extras-rpms' do
-  enabled "true"
-  action :makecache
+  description 'Red Hat Enterprise Linux 7 Server - Extras (RPMs)'
+  mirrorlist 'https://cdn.redhat.com/content/dist/rhel/server/7/7Server/$basearch/extras/os' 
+  # 'http://mirrors.fedoraproject.org/mirrorlist?repo=epel-7&arch=$basearch'
+  #gpgkey 'http://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7'
+  action :create
+  #enabled "true"
+  #action :makecache
 end
 
 
