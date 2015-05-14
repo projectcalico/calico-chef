@@ -99,7 +99,7 @@ end
 
 template "/etc/my.cnf" do
     mode "0644"
-    source "control/my.cnf.erb"
+    source "control/my_redhat.cnf.erb"
     owner "root"
     group "root"
     notifies :restart, "service[mariadb]", :immediately
