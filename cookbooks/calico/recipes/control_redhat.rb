@@ -118,8 +118,8 @@ bash "configure-mysql" do
 mysql_secure_installation <<EOF
 
 Y
-{node[:calico][:admin_password]}
-{node[:calico][:admin_password]}
+#{node[:calico][:admin_password]}
+#{node[:calico][:admin_password]}
 Y
 Y
 Y
