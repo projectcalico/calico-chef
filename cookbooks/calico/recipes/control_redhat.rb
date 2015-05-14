@@ -62,16 +62,18 @@ rpm_package "rdo-release" do
     action :install
 end
 
-yum_repository 'rhel-7-server-optional-rpms' do
-  enabled "true"
-  action :makecache
-end
-
 yum_repository 'rhel-7-server-extras-rpms' do
   description 'Red Hat Enterprise Linux 7 Server - Extras (RPMs)'
   mirrorlist 'https://cdn.redhat.com/content/dist/rhel/server/7/7Server/$basearch/extras/os' 
   # 'http://mirrors.fedoraproject.org/mirrorlist?repo=epel-7&arch=$basearch'
   #gpgkey 'http://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7'
+  action :create
+  #enabled "true"
+  #action :makecache
+end
+yum_repository 'rhel-7-server-optional-rpms' do
+  description 'Red Hat Enterprise Linux 7 Server - Optional (RPMs)'
+  mirrorlist 'https://cdn.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/optional/os' 
   action :create
   #enabled "true"
   #action :makecache
