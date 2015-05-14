@@ -62,6 +62,16 @@ rpm_package "rdo-release" do
     action :install
 end
 
+yum_repository 'rhel-7-server-optional-rpms' do
+  enabled "true"
+  action :makecache
+end
+
+yum_repository 'rhel-7-server-extras-rpms' do
+  enabled "true"
+  action :makecache
+end
+
 
 # mysql
 package "MySQL-python" do
