@@ -43,6 +43,26 @@ execute "read-sysctl" do
     action [:nothing]
 end
 
+# Prereqs
+remote_file "#{Chef::Config[:file_cache_path]}/epel-release-7-5.noarch.rpm" do
+    source "http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm"
+    action :create
+end
+remote_file "#{Chef::Config[:file_cache_path]}/rdo-release-juno.rpm" do
+    source "http://rdo.fedorapeople.org/openstack-juno/rdo-release-juno.rpm"
+    action :create
+end
+
+rpm_package "epel-release" do
+    source "#{Chef::Config[:file_cache_path]}/epel-release-7-5.noarch.rpm"
+    action :install
+end
+rpm_package "rdo-release" do
+    source "#{Chef::Config[:file_cache_path]}/rdo-release-juno.rpm"
+    action :install
+end
+
+
 # mysql
 package "MySQL-python" do
     action [:install]
