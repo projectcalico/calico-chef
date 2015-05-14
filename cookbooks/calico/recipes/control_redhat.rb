@@ -124,7 +124,7 @@ end
 # KEYSTONE
 
 # Keystone requires that we do some manual database setup.
-package "keystone" do
+package "openstack-keystone" do
     action [:install]
     notifies :create, "template[/etc/keystone/keystone.conf]", :immediately
     notifies :run, "execute[remove-old-keystone-db]", :immediately
@@ -146,10 +146,6 @@ exit
       EOF
       EOH
     notifies :run, "execute[keystone-manage db_sync]", :immediately
-end
-
-package "openstack-keystone" do
-    action [:install]
 end
 
 package "python-keystoneclient" do
