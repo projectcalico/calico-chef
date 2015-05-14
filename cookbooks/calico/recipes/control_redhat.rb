@@ -149,13 +149,9 @@ end
 package "openstack-keystone" do
     action [:install]
     notifies :create, "template[/etc/keystone/keystone.conf]", :immediately
-    #notifies :run, "execute[remove-old-keystone-db]", :immediately
     notifies :run, "bash[keystone-db-setup]", :immediately
 end
-#execute "remove-old-keystone-db" do
-#    action [:nothing]
-#    command "rm /var/lib/keystone/keystone.db"
-#end
+
 bash "keystone-db-setup" do
     action [:nothing]
     user "root"
@@ -284,18 +280,6 @@ end
 # GLANCE
 package "python-glanceclient" do
     action [:install]
-end
-
-package "openstack-glance" do
-    action [:install]
-    notifies :create, "template[/etc/glance/glance-api.conf]", :immediately
-    notifies :create, "template[/etc/glance/glance-registry.conf]", :immediately
-    notifies :run, "execute[remove-old-glance-db]", :immediately
-end
-execute "remove-old-glance-db" do
-    action [:nothing]
-    command "rm /var/lib/glance/glance.sqlite"
-    returns [0, 1]
     notifies :run, "bash[glance-db-setup]", :immediately
 end
 bash "glance-db-setup" do
@@ -309,11 +293,6 @@ GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY '#{node[:calico][
 exit
       EOF
       EOH
-    notifies :run, "execute[glance-manage db_sync]", :immediately
-end
-execute "glance-manage db_sync" do
-    action [:nothing]
-    user "glance"
     notifies :run, "bash[initial-glance]", :immediately
 end
 bash "initial-glance" do
@@ -331,6 +310,23 @@ bash "initial-glance" do
       --internalurl=http://#{node[:fqdn]}:9292 \
       --adminurl=http://#{node[:fqdn]}:9292
     EOH
+end
+
+package "openstack-glance" do
+    action [:install]
+    notifies :create, "template[/etc/glance/glance-api.conf]", :immediately
+    notifies :create, "template[/etc/glance/glance-registry.conf]", :immediately
+    notifies :run, "execute[remove-old-glance-db]", :immediately
+    notifies :run, "execute[glance-manage db_sync]", :immediately
+end
+execute "remove-old-glance-db" do
+    action [:nothing]
+    command "rm /var/lib/glance/glance.sqlite"
+    returns [0, 1]
+end
+execute "glance-manage db_sync" do
+    action [:nothing]
+    user "glance"
 end
 
 template "/etc/glance/glance-api.conf" do
