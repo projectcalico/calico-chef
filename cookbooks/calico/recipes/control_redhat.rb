@@ -111,16 +111,15 @@ package "rabbitmq-server" do
     action [:install]
     notifies :run, "execute[configure-rabbit]", :immediately
 end
-execute "configure-rabbit" do
-    action [:nothing]
-    command "rabbitmqctl change_password guest #{node[:calico][:admin_password]}"
-end
 service "rabbitmq-server" do
     provider Chef::Provider::Service::Systemd
     supports :restart => true
     action [:nothing]
 end
-
+execute "configure-rabbit" do
+    action [:nothing]
+    command "rabbitmqctl change_password guest #{node[:calico][:admin_password]}"
+end
 
 # KEYSTONE
 
