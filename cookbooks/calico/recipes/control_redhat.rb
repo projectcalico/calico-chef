@@ -65,20 +65,25 @@ end
 yum_repository 'rhel-7-server-extras-rpms' do
   description 'Red Hat Enterprise Linux 7 Server - Extras (RPMs)'
   mirrorlist 'https://cdn.redhat.com/content/dist/rhel/server/7/7Server/$basearch/extras/os' 
-  # 'http://mirrors.fedoraproject.org/mirrorlist?repo=epel-7&arch=$basearch'
-  #gpgkey 'http://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7'
+  enabled "true"
   action :create
-  #enabled "true"
-  #action :makecache
 end
 yum_repository 'rhel-7-server-optional-rpms' do
   description 'Red Hat Enterprise Linux 7 Server - Optional (RPMs)'
   mirrorlist 'https://cdn.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/optional/os' 
+  enabled "true"
+  notifies :run, "bash[subscribe]", :immediately
   action :create
-  #enabled "true"
-  #action :makecache
 end
 
+bash "subscribe" do
+    action [:nothing]
+    user "root"
+    code <<-EOF
+subscription-manager repos --enable rhel-7-server-optional-rpms
+subscription-manager repos --enable rhel-7-server-extras-rpms
+EOF
+end
 
 # mysql
 package "MySQL-python" do
