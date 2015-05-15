@@ -157,155 +157,155 @@ bash "ipv6-image" do
 end
 
 
-# # Output and store the UID and GID for nova - this may be required for live migration
-# execute "get-nova-info" do
-    # command "id nova >> /tmp/nova.user"
-# end
-# ruby_block "store-nova-user-info" do
-    # block do
-        # output = ::File.read("/tmp/nova.user")
-        # match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output)
-        # node.set["nova_uid"] = match[:uid]
-        # node.set["nova_gid"] = match[:gid]
-    # end
-# end
+# Output and store the UID and GID for nova - this may be required for live migration
+execute "get-nova-info" do
+    command "id nova >> /tmp/nova.user"
+end
+ruby_block "store-nova-user-info" do
+    block do
+        output = ::File.read("/tmp/nova.user")
+        match = /uid=(?<uid>\d+).*gid=(?<gid>\d+).*/.match(output)
+        node.set["nova_uid"] = match[:uid]
+        node.set["nova_gid"] = match[:gid]
+    end
+end
 
-# # CALICO
+# CALICO
 
-# package "python-devel" do
-    # action :install
-# end
-# package "libffi-devel" do
-    # action :install
-# end
-# package "openssl-devel" do
-    # action :install
-# end
+package "python-devel" do
+    action :install
+end
+package "libffi-devel" do
+    action :install
+end
+package "openssl-devel" do
+    action :install
+end
 
-# package "etcd" do
-    # action :install
-# end
-# template "/etc/init/etcd.conf" do
-    # mode "0640"
-    # source "control/etcd.conf.erb"
-    # owner "root"
-    # group "root"
-    # notifies :run, "bash[etcd-setup]", :immediately
-    # notifies :run, "bash[get-python-etcd]", :immediately
-# end
+package "etcd" do
+    action :install
+end
+template "/etc/init/etcd.conf" do
+    mode "0640"
+    source "control/etcd.conf.erb"
+    owner "root"
+    group "root"
+    notifies :run, "bash[etcd-setup]", :immediately
+    notifies :run, "bash[get-python-etcd]", :immediately
+end
 
-# # This action removes the etcd database and restarts it.
-# bash "etcd-setup" do
-    # action [:nothing]
-    # user "root"
-    # code <<-EOH
-    # rm -rf /var/lib/etcd/*
-    # service etcd restart
-    # EOH
-# end
+# This action removes the etcd database and restarts it.
+bash "etcd-setup" do
+    action [:nothing]
+    user "root"
+    code <<-EOH
+    rm -rf /var/lib/etcd/*
+    service etcd restart
+    EOH
+end
 
-# bash "get-python-etcd" do
-    # action [:nothing]
-    # user "root"
-    # code <<-EOH
-    # curl -L https://github.com/Metaswitch/python-etcd/archive/master.tar.gz -o python-etcd.tar.gz
-    # tar xvf python-etcd.tar.gz
-    # cd python-etcd-master
-    # python setup.py install
-    # EOH
-# end
+bash "get-python-etcd" do
+    action [:nothing]
+    user "root"
+    code <<-EOH
+    curl -L https://github.com/Metaswitch/python-etcd/archive/master.tar.gz -o python-etcd.tar.gz
+    tar xvf python-etcd.tar.gz
+    cd python-etcd-master
+    python setup.py install
+    EOH
+end
 
-# package "calico-control" do
-    # action :install
-# end
+package "calico-control" do
+    action :install
+end
 
-# cookbook_file "/etc/neutron/plugins/ml2/ml2_conf.ini" do
-    # mode "0644"
-    # source "ml2_conf.ini"
-    # owner "root"
-    # group "neutron"
-    # notifies :restart, "service[openstack-neutron-server]", :immediately
-# end
-
-
-# # DEPLOMENT SPECIFIC CONFIGURATION
-
-# bash "basic-networks" do
-    # action [:run]
-    # user "root"
-    # environment node["run_env"]
-    # code <<-EOH
-    # neutron net-create demo-net --shared
-    # neutron subnet-create demo-net --name demo-subnet \
-      # --gateway 10.28.0.1 10.28.0.0/16
-    # neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
-      # --gateway fd5f:5d21:845:1c2e:2::1 fd5f:5d21:845:1c2e:2::/80
-    # EOH
-    # not_if "neutron net-list | grep demo-net"
-# end
+cookbook_file "/etc/neutron/plugins/ml2/ml2_conf.ini" do
+    mode "0644"
+    source "ml2_conf.ini"
+    owner "root"
+    group "neutron"
+    notifies :restart, "service[openstack-neutron-server]", :immediately
+end
 
 
-# # LIVE MIGRATION CONFIGURATION
+# DEPLOMENT SPECIFIC CONFIGURATION
 
-# # Install NFS kernel server.
-# package "nfs-kernel-server" do
-    # action [:nothing]
-    # only_if { node[:calico][:live_migrate] }
-    # notifies :run, "ruby_block[configure-idmapd]", :immediately
-    # notifies :create_if_missing, "directory[/var/lib/nova_share]", :immediately
-    # notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
-    # notifies :run, "ruby_block[add-unrestricted-share]", :immediately
-    # notifies :run, "execute[reload-nfs-cfg]", :immediately
-    # notifies :restart, "service[nfs-kernel-server]", :immediately
-    # notifies :restart, "service[idmapd]", :immediately
-# end
+bash "basic-networks" do
+    action [:run]
+    user "root"
+    environment node["run_env"]
+    code <<-EOH
+    neutron net-create demo-net --shared
+    neutron subnet-create demo-net --name demo-subnet \
+      --gateway 10.28.0.1 10.28.0.0/16
+    neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
+      --gateway fd5f:5d21:845:1c2e:2::1 fd5f:5d21:845:1c2e:2::/80
+    EOH
+    not_if "neutron net-list | grep demo-net"
+end
 
-# # Ensure idmapd configuration is correct
-# ruby_block "configure-idmapd" do
-    # block do
-        # file = Chef::Util::FileEdit.new("/etc/idmapd.conf")
-        # file.insert_line_if_no_match(/\[Mapping\]\s/, "[Mapping]")
-        # file.insert_line_after_match(/\[Mapping\]\s/, "Nobody-Group = nogroup")
-        # file.insert_line_after_match(/\[Mapping\]\s/, "Nobody-User = nobody")
-        # file.write_file
-    # end
-    # action [:nothing]
-# end
 
-# # Create share point
-# directory "/var/lib/nova_share" do
-    # owner "nova"
-    # group "nova"
-    # mode "0755"
-    # action [:nothing]
-# end
-# directory "/var/lib/nova_share/instances" do
-    # owner "nova"
-    # group "nova"
-    # mode "0755"
-    # action [:nothing]
-# end
+# LIVE MIGRATION CONFIGURATION
 
-# # Add an unrestricted entry to the share point
-# ruby_block "add-unrestricted-share" do
-    # block do
-        # file = Chef::Util::FileEdit.new("/etc/exports")
-        # entry = "/var/lib/nova_share/instances *(rw,fsid=0,insecure,no_subtree_check,async,no_root_squash)"
-        # file.insert_line_if_no_match(/#{entry}/, entry)
-        # file.write_file
-    # end
-    # action [:nothing]
-# end
+# Install NFS kernel server.
+package "nfs-kernel-server" do
+    action [:nothing]
+    only_if { node[:calico][:live_migrate] }
+    notifies :run, "ruby_block[configure-idmapd]", :immediately
+    notifies :create_if_missing, "directory[/var/lib/nova_share]", :immediately
+    notifies :create_if_missing, "directory[/var/lib/nova_share/instances]", :immediately
+    notifies :run, "ruby_block[add-unrestricted-share]", :immediately
+    notifies :run, "execute[reload-nfs-cfg]", :immediately
+    notifies :restart, "service[nfs-kernel-server]", :immediately
+    notifies :restart, "service[idmapd]", :immediately
+end
 
-# execute "reload-nfs-cfg" do
-    # command "exportfs -r"
-    # action [:nothing]
-# end
+# Ensure idmapd configuration is correct
+ruby_block "configure-idmapd" do
+    block do
+        file = Chef::Util::FileEdit.new("/etc/idmapd.conf")
+        file.insert_line_if_no_match(/\[Mapping\]\s/, "[Mapping]")
+        file.insert_line_after_match(/\[Mapping\]\s/, "Nobody-Group = nogroup")
+        file.insert_line_after_match(/\[Mapping\]\s/, "Nobody-User = nobody")
+        file.write_file
+    end
+    action [:nothing]
+end
 
-# service "nfs-kernel-server" do
-    # action [:nothing]
-# end
+# Create share point
+directory "/var/lib/nova_share" do
+    owner "nova"
+    group "nova"
+    mode "0755"
+    action [:nothing]
+end
+directory "/var/lib/nova_share/instances" do
+    owner "nova"
+    group "nova"
+    mode "0755"
+    action [:nothing]
+end
 
-# service "idmapd" do
-    # action [:nothing]
-# end
+# Add an unrestricted entry to the share point
+ruby_block "add-unrestricted-share" do
+    block do
+        file = Chef::Util::FileEdit.new("/etc/exports")
+        entry = "/var/lib/nova_share/instances *(rw,fsid=0,insecure,no_subtree_check,async,no_root_squash)"
+        file.insert_line_if_no_match(/#{entry}/, entry)
+        file.write_file
+    end
+    action [:nothing]
+end
+
+execute "reload-nfs-cfg" do
+    command "exportfs -r"
+    action [:nothing]
+end
+
+service "nfs-kernel-server" do
+    action [:nothing]
+end
+
+service "idmapd" do
+    action [:nothing]
+end
