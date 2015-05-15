@@ -114,12 +114,13 @@ end
 bash "run_packstack" do
     action [:nothing]
     user "root"
-    code <<-EOF
-packstack --answer-file=answers.cfg
+    code <<-EOH
+packstack --answer-file=answers.cfg <<EOF
 dcl1234!
 dcl1234!
 dcl1234!
 EOF
+EOH
 end
 
 
