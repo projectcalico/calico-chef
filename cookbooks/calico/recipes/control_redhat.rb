@@ -114,7 +114,7 @@ template "/root/answers.cfg" do
 end
 
 bash "run_packstack" do
-    action [:nothing]
+    action [:run]
     user "root"
     code <<-EOH
 packstack --answer-file=answers.cfg
