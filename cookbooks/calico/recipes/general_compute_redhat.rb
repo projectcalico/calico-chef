@@ -59,185 +59,58 @@ end
 package "ntp" do
     action [:install]
 end
-package "MySQL-python" do
-    action [:install]
-end
 
-
-# COMPUTE
-
-package "nova-compute-kvm" do
-    action [:install]
-end
-package "python-guestfs" do
-    action [:install]
-end
-package "nova-api-metadata" do
-    action [:install]
-end
-
-# Mark the kernel world-readable.
-# cookbook_file "/etc/kernel/postinst.d/statoverride" do
-    # source "statoverride"
-    # mode "0755"
-    # owner "root"
-    # group "root"
-    # notifies :run, "bash[kernel-readable]", :immediately
-# end
-# bash "kernel-readable" do
-    # user "root"
-    # code "dpkg-statoverride --update --force --add root root 0644 /boot/vmlinuz-$(uname -r)"
-    # action [:nothing]
-# end
-
-# Ensure that qemu can correctly find tap devices.
-cookbook_file "/etc/libvirt/qemu.conf" do
-    source "qemu.conf"
-    mode "0600"
-    owner "root"
-    group "root"
-    notifies :restart, "service[libvirt-bin]", :immediately
-end
-service "libvirt-bin" do
-    provider Chef::Provider::Service::Systemd
-    supports :restart => true
-    action [:nothing]
-end
-
-# Set up the nova configuration file.
-template "/etc/nova/nova.conf" do
-    mode "0640"
-    source "compute/nova.conf.erb"
-    variables({
-        admin_password: node[:calico][:admin_password],
-        controller: controller[:fqdn],
-        live_migrate: node[:calico][:live_migrate]
-    })
-    owner "nova"
-    group "nova"
-    notifies :delete, "file[/var/lib/nova/nova.sqlite]", :immediately
-    notifies :restart, "service[nova-compute]", :immediately
-    notifies :restart, "service[nova-api-metadata]", :immediately
-end
-template "/etc/nova/nova-compute.conf" do
-    mode "0640"
-    source "compute/nova-compute.conf.erb"
-    variables lazy {
-        {
-            virt_type: if system("egrep -c '(vmx|svm)' /proc/cpuinfo") then "kvm" else "qemu" end
-        }
-    }
-    owner "nova"
-    group "nova"
-    notifies :run, "execute[live-migration]", :immediately
-    notifies :restart, "service[nova-compute]", :immediately
-end
-
-# Delete the sqlite DB and restart Nova.
-file "/var/lib/nova/nova.sqlite" do
-    action [:nothing]
-end
-service "nova-compute" do
-    provider Chef::Provider::Service::Systemd
-    supports :restart => true
-    action [:nothing]
-    notifies :restart, "service[libvirt-bin]", :immediately
-end
-service "nova-api-metadata" do
-    provider Chef::Provider::Service::Systemd
-    supports :restart => true
-    action [:nothing]
-end
-
-# SET UP NOVA WITH PASSWORDLESS AUTHENTICATION
-
-# Provide a logon shell for nova user.
-execute "nova-logon-shell" do
+bash "disableNM" do
+    action [:run]
     user "root"
-    command "usermod -s /bin/bash nova"
+    code <<-EOF
+systemctl stop NetworkManager
+systemctl disable NetworkManager
+systemctl enable network
+EOF
 end
 
-# Create SSH key for nova user.
-execute "nova-ssh-keygen" do
-    user "nova"
-    command "ssh-keygen -q -t rsa -N '' -f /var/lib/nova/.ssh/id_rsa"
-    creates "/var/lib/nova/.ssh/id_rsa"
-    not_if { ::File.exists?("/var/lib/nova/.ssh/id_rsa")}
+remote_file "#{Chef::Config[:file_cache_path]}/epel-release-7-5.noarch.rpm" do
+    source "http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm"
+    action :create
+end
+remote_file "#{Chef::Config[:file_cache_path]}/rdo-release-juno.rpm" do
+    source "http://rdo.fedorapeople.org/openstack-juno/rdo-release-juno.rpm"
+    action :create
 end
 
-# Create authorized keys file for nova.
-file "/var/lib/nova/.ssh/authorized_keys" do
-    owner "nova"
-    group "nova"
-    mode "0600"
-    action :create_if_missing
+rpm_package "epel-release" do
+    source "#{Chef::Config[:file_cache_path]}/epel-release-7-5.noarch.rpm"
+    action :install
+end
+rpm_package "rdo-release" do
+    source "#{Chef::Config[:file_cache_path]}/rdo-release-juno.rpm"
+    action :install
 end
 
-# Add SSH config to automatically accept unknown hosts
-cookbook_file "/var/lib/nova/.ssh/config" do
-    source "config.ssh"
-    owner "nova"
-    group "nova"
-    mode "0600"
+yum_repository 'rhel-7-server-extras-rpms' do
+  description 'Red Hat Enterprise Linux 7 Server - Extras (RPMs)'
+  mirrorlist 'https://cdn.redhat.com/content/dist/rhel/server/7/7Server/$basearch/extras/os' 
+  enabled true
+  action :create
+end
+yum_repository 'rhel-7-server-optional-rpms' do
+  description 'Red Hat Enterprise Linux 7 Server - Optional (RPMs)'
+  mirrorlist 'https://cdn.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/optional/os' 
+  enabled true
+  notifies :run, "bash[subscribe]", :immediately
+  notifies :run, "bash[disableNM]", :immediately
+  action :create
 end
 
-# Expose public key in attributes
-ruby_block "expose-public-key" do
-    block do
-        node.set['nova_public_key'] = ::File.read("/var/lib/nova/.ssh/id_rsa.pub")
-    end
-end
-
-# Add the public key for the other compute nodes to our authorized_keys.
-ruby_block "load-compute-node-keys" do
-    block do
-        file = Chef::Util::FileEdit.new("/var/lib/nova/.ssh/authorized_keys")
-        other_compute.each do |n|
-            key = n['nova_public_key']
-            unless key.nil?
-                file.insert_line_if_no_match(/#{key}/, key)
-            end
-        end
-        file.write_file
-    end
-end
-
-# NETWORKING
-
-package "neutron-common" do
-    action [:install]
-end
-package "neutron-dhcp-agent" do
-    action [:install]
-end
-
-# Set up the Neutron config file.
-template "/etc/neutron/neutron.conf" do
-    mode "0644"
-    source "compute/neutron.conf.erb"
-    variables({
-        admin_password: node[:calico][:admin_password],
-        controller: controller[:fqdn]
-    })
-    owner "root"
-    group "neutron"
-    notifies :restart, "service[neutron-dhcp-agent]", :delayed
-end
-
-cookbook_file "/etc/neutron/dhcp_agent.ini" do
-    mode "0644"
-    source "dhcp_agent.ini"
-    owner "root"
-    group "neutron"
-end
-
-# Restart relevant services.
-service "neutron-dhcp-agent" do
-    provider Chef::Provider::Service::Systemd
-    supports :restart => true
+bash "subscribe" do
     action [:nothing]
+    user "root"
+    code <<-EOF
+subscription-manager repos --enable rhel-7-server-optional-rpms
+subscription-manager repos --enable rhel-7-server-extras-rpms
+EOF
 end
-
 
 # CALICO
 

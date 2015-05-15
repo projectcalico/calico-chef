@@ -107,7 +107,9 @@ template "/root/answers.cfg" do
     owner "root"
     group "root"
     variables({
-        admin_key: node[:calico][:admin_token],
+        admin_pass: node[:calico][:admin_password],
+        controllers: search(:node, "role:controller"), 
+        computes: search(:node, "role:compute"),
     })
 end
 
