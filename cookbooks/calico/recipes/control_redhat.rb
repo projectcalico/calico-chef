@@ -117,7 +117,7 @@ bash "run_packstack" do
     action [:run]
     user "root"
     code <<-EOH
-packstack --answer-file=answers.cfg
+packstack --answer-file=/root/answers.cfg
 EOH
 end
 
