@@ -492,13 +492,6 @@ ruby_block "store-nova-user-info" do
 end
 
 
-# HA PROXY
-
-package "haproxy" do
-    action [:install]
-end
-
-
 # NEUTRON
 
 package "neutron-server" do
@@ -533,9 +526,9 @@ bash "initial-neutron" do
     keystone service-create --name neutron --type network --description "OpenStack Networking"
     keystone endpoint-create \
       --service-id $(keystone service-list | awk '/ network / {print $2}') \
-      --publicurl http://#{node[:fqdn]}:9695 \
-      --adminurl http://#{node[:fqdn]}:9695 \
-      --internalurl http://#{node[:fqdn]}:9695
+      --publicurl http://#{node[:fqdn]}:9696 \
+      --adminurl http://#{node[:fqdn]}:9696 \
+      --internalurl http://#{node[:fqdn]}:9696
     EOH
 end
 
@@ -682,45 +675,6 @@ service "tgt" do
 end
 
 
-# CALICO
-
-package "python-etcd" do
-    action :install
-end
-package "etcd" do
-    action :install
-end
-template "/etc/init/etcd.conf" do
-    mode "0640"
-    source "control/etcd.conf.erb"
-    owner "root"
-    group "root"
-    notifies :run, "bash[etcd-setup]", :immediately
-end
-
-# This action removes the etcd database and restarts it.
-bash "etcd-setup" do
-    action [:nothing]
-    user "root"
-    code <<-EOH
-    rm -rf /var/lib/etcd/*
-    service etcd restart
-    EOH
-end
-
-package "calico-control" do
-    action :install
-end
-
-cookbook_file "/etc/neutron/plugins/ml2/ml2_conf.ini" do
-    mode "0644"
-    source "ml2_conf.ini"
-    owner "root"
-    group "neutron"
-    notifies :restart, "service[neutron-server]", :immediately
-end
-
-
 # DEPLOMENT SPECIFIC CONFIGURATION
 
 bash "basic-networks" do
@@ -802,3 +756,4 @@ end
 service "idmapd" do
     action [:nothing]
 end
+
