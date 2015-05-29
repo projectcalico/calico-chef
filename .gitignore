@@ -4,3 +4,4 @@
 # Ignore Chef key files and secrets
 ###
 .chef/*
+.idea/*
