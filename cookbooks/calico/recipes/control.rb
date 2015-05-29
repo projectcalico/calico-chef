@@ -727,6 +727,7 @@ cookbook_file "/etc/neutron/plugins/ml2/ml2_conf.ini" do
     owner "root"
     group "neutron"
     notifies :restart, "service[neutron-server]", :immediately
+    notifies :run, "bash[neutron-db-manage]", :immediately
 end
 
 bash "neutron-db-manage" do
