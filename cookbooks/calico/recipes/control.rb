@@ -729,6 +729,14 @@ cookbook_file "/etc/neutron/plugins/ml2/ml2_conf.ini" do
     notifies :restart, "service[neutron-server]", :immediately
 end
 
+bash "neutron-db-manage" do
+    action [:nothing]
+    user "neutron"
+    code <<-EOH
+    neutron-db-manage --config-file /etc/neutron/neutron.conf \
+    --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade juno
+    EOH
+end
 
 # LIVE MIGRATION CONFIGURATION
 
