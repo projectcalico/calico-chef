@@ -172,10 +172,11 @@ connection = mysql://glance:<%= @admin_password %>@<%= node[:fqdn] %>/glance
 #db_max_retries = 20
 
 [keystone_authtoken]
-auth_uri = http://<%= node[:fqdn] %>:5000
-auth_host = <%= node[:fqdn] %>
-auth_port = 35357
-auth_protocol = http
+identity_uri = http://<%= node[:fqdn] %>:35357
+auth_uri = http://<%= node[:fqdn] %>:5000/v2.0
+#auth_host = <%= node[:fqdn] %>
+#auth_port = 35357
+#auth_protocol = http
 admin_tenant_name = service
 admin_user = glance
 admin_password = <%= @admin_password %>

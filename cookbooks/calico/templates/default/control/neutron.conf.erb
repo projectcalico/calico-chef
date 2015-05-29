@@ -60,7 +60,7 @@ lock_path = $state_path/lock
 # previous versions, the class name of a plugin can be specified instead of its
 # entrypoint name.
 #
-core_plugin = neutron.plugins.ml2.plugin.Ml2Plugin
+core_plugin = ml2
 # Example: core_plugin = ml2
 
 # (ListOpt) List of service plugin entrypoints to be loaded from the
@@ -113,6 +113,7 @@ allow_overlapping_ips = True
 # RPC configuration options. Defined in rpc __init__
 # The messaging module to use, defaults to kombu.
 # rpc_backend = neutron.openstack.common.rpc.impl_kombu
+rpc_backend = rabbit
 # Size of RPC thread pool
 # rpc_thread_pool_size = 64
 # Size of RPC connection pool
@@ -316,7 +317,7 @@ rpc_workers = 2
 # nova_url = http://127.0.0.1:8774
 
 # Name of nova region to use. Useful if keystone manages more than one region
-# nova_region_name =
+nova_region_name = regionOne
 
 # Username for connection to nova in admin context
 # nova_admin_username =
@@ -402,10 +403,11 @@ root_helper = sudo /usr/bin/neutron-rootwrap /etc/neutron/rootwrap.conf
 # ===========  end of items for agent management extension =====
 
 [keystone_authtoken]
-auth_uri = http://<%= node[:fqdn] %>:5000
-auth_host = <%= node[:fqdn] %>
-auth_port = 35357
-auth_protocol = http
+identity_uri = http://<%= node[:fqdn] %>:35357
+auth_uri = http://<%= node[:fqdn] %>:5000/v2.0
+#auth_host = <%= node[:fqdn] %>
+#auth_port = 35357
+#auth_protocol = http
 admin_tenant_name = service
 admin_user = neutron
 admin_password = <%= @admin_password %>

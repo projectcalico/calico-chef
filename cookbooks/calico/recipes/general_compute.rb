@@ -20,6 +20,12 @@ get_ipv6 = Proc.new do |node|
     global_ipv6.keys.sort[0].to_s
 end
 
+template "/etc/apt/sources.list.d/cloudarchive-juno.list" do
+    mode "0644"
+    source "cloudarchive-juno.list.erb"
+    owner "root"
+    group "root"
+end
 
 # Tell apt about the Calico repository server.
 template "/etc/apt/sources.list.d/calico.list" do

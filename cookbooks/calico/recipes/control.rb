@@ -3,6 +3,13 @@ require 'uri'
 # Find the BGP neighbors, which is everyone except ourselves.
 bgp_neighbors = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
 
+template "/etc/apt/sources.list.d/cloudarchive-juno.list" do
+    mode "0644"
+    source "cloudarchive-juno.list.erb"
+    owner "root"
+    group "root"
+end
+
 template "/etc/apt/sources.list.d/calico.list" do
     mode "0644"
     source "calico.list.erb"

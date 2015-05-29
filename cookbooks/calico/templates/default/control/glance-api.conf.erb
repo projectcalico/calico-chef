@@ -8,12 +8,6 @@ rabbit_password = <%= @admin_password %>
 # Show debugging output in logs (sets DEBUG log level output)
 #debug = False
 
-# Which backend scheme should Glance use by default is not specified
-# in a request to add a new image to Glance? Known schemes are determined
-# by the known_stores option below.
-# Default: 'file'
-default_store = file
-
 # List of which store classes and store class locations are
 # currently known to glance at startup.
 # Existing but disabled stores:
@@ -270,32 +264,6 @@ qpid_heartbeat = 5
 # Set to 'ssl' to enable SSL
 qpid_protocol = tcp
 qpid_tcp_nodelay = True
-
-# ============ Filesystem Store Options ========================
-
-# Directory that the Filesystem backend store
-# writes image data to
-filesystem_store_datadir = /var/lib/glance/images/
-
-# A list of directories where image data can be stored.
-# This option may be specified multiple times for specifying multiple store
-# directories. Either one of filesystem_store_datadirs or
-# filesystem_store_datadir option is required. A priority number may be given
-# after each directory entry, separated by a ":".
-# When adding an image, the highest priority directory will be selected, unless
-# there is not enough space available in cases where the image size is already
-# known. If no priority is given, it is assumed to be zero and the directory
-# will be considered for selection last. If multiple directories have the same
-# priority, then the one with the most free space available is selected.
-# If same store is specified multiple times then BadStoreConfiguration
-# exception will be raised.
-#filesystem_store_datadirs = /var/lib/glance/images/:1
-
-# A path to a JSON file that contains metadata describing the storage
-# system.  When show_multiple_locations is True the information in this
-# file will be returned with any location that is contained in this
-# store.
-#filesystem_store_metadata_file = None
 
 # ============ Swift Store Options =============================
 
@@ -645,10 +613,11 @@ connection = mysql://glance:<%= @admin_password %>@<%= node[:fqdn] %>/glance
 #db_max_retries = 20
 
 [keystone_authtoken]
-auth_uri = http://<%= node[:fqdn] %>:5000
-auth_host = <%= node[:fqdn] %>
-auth_port = 35357
-auth_protocol = http
+identity_uri = http://<%= node[:fqdn] %>:35357
+auth_uri = http://<%= node[:fqdn] %>:5000/v2.0
+#auth_host = <%= node[:fqdn] %>
+#auth_port = 35357
+#auth_protocol = http
 admin_tenant_name = service
 admin_user = glance
 admin_password = <%= @admin_password %>
@@ -671,3 +640,36 @@ flavor = keystone
 # location strategy defined by the 'location_strategy' config option.
 #store_type_preference =
 
+[glance_store]
+
+# Which backend scheme should Glance use by default is not specified
+# in a request to add a new image to Glance? Known schemes are determined
+# by the known_stores option below.
+# Default: 'file'
+default_store = file
+
+# ============ Filesystem Store Options ========================
+
+# Directory that the Filesystem backend store
+# writes image data to
+filesystem_store_datadir = /var/lib/glance/images/
+
+# A list of directories where image data can be stored.
+# This option may be specified multiple times for specifying multiple store
+# directories. Either one of filesystem_store_datadirs or
+# filesystem_store_datadir option is required. A priority number may be given
+# after each directory entry, separated by a ":".
+# When adding an image, the highest priority directory will be selected, unless
+# there is not enough space available in cases where the image size is already
+# known. If no priority is given, it is assumed to be zero and the directory
+# will be considered for selection last. If multiple directories have the same
+# priority, then the one with the most free space available is selected.
+# If same store is specified multiple times then BadStoreConfiguration
+# exception will be raised.
+#filesystem_store_datadirs = /var/lib/glance/images/:1
+
+# A path to a JSON file that contains metadata describing the storage
+# system.  When show_multiple_locations is True the information in this
+# file will be returned with any location that is contained in this
+# store.
+#filesystem_store_metadata_file = None

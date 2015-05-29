@@ -1,4 +1,5 @@
 [DEFAULT]
+my_ip = <%= node[:ipaddress] %>
 glance_host = <%= node[:fqdn] %>
 auth_strategy = keystone
 rabbit_host = <%= node[:fqdn] %>
@@ -18,10 +19,11 @@ volumes_dir = /var/lib/cinder/volumes
 connection = mysql://cinder:<%= @admin_password %>@<%= node[:fqdn] %>/cinder
 
 [keystone_authtoken]
-auth_uri = http://<%= node[:fqdn] %>:5000
-auth_host = <%= node[:fqdn] %>
-auth_port = 35357
-auth_protocol = http
+identity_uri = http://<%= node[:fqdn] %>:35357
+auth_uri = http://<%= node[:fqdn] %>:5000/v2.0
+#auth_host = <%= node[:fqdn] %>
+#auth_port = 35357
+#auth_protocol = http
 admin_tenant_name = service
 admin_user = cinder
 admin_password = <%= @admin_password %>
