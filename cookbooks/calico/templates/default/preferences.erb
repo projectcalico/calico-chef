@@ -1,3 +1,7 @@
-Package: *
+Package: calico*
 Pin: origin <%= @package_host %>
+Pin-Priority: 1002
+
+Package: *
+Pin: origin <%= @etcd_host %>
 Pin-Priority: 1001
