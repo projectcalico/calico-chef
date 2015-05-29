@@ -11,6 +11,10 @@ template "/etc/apt/sources.list.d/cloudarchive-juno.list" do
     notifies :run, "execute[apt-get update]", :immediately
 end
 
+package "ubuntu-cloud-keyring" do
+    action [:install]
+end
+
 template "/etc/apt/sources.list.d/calico.list" do
     mode "0644"
     source "calico.list.erb"
