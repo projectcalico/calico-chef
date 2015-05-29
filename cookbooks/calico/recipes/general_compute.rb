@@ -27,6 +27,10 @@ template "/etc/apt/sources.list.d/cloudarchive-juno.list" do
     group "root"
 end
 
+package "ubuntu-cloud-keyring" do
+    action [:install]
+end
+
 # Tell apt about the Calico repository server.
 template "/etc/apt/sources.list.d/calico.list" do
     mode "0644"

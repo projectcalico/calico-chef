@@ -375,6 +375,9 @@ end
 
 # NOVA
 
+package "nova-common" do
+    action [:install]
+end
 package "nova-api" do
     action [:install]
 end
