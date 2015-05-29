@@ -732,10 +732,9 @@ end
 
 bash "neutron-db-manage" do
     action [:nothing]
-    user "neutron"
+    user "root"
     code <<-EOH
-    neutron-db-manage --config-file /etc/neutron/neutron.conf \
-    --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade juno
+    neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade juno
     EOH
 end
 
