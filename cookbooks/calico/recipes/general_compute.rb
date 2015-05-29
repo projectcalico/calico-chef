@@ -54,7 +54,8 @@ template "/etc/apt/preferences" do
     owner "root"
     group "root"
     variables({
-        package_host: URI.parse(node[:calico][:package_source].split[0]).host
+        package_host: URI.parse(node[:calico][:package_source].split[0]).host,
+        etcd_host: URI.parse(node[:calico][:etcd_ppa].split[0]).host
     })
 end
 apt_repository "calico-ppa" do
