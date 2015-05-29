@@ -8,6 +8,7 @@ template "/etc/apt/sources.list.d/cloudarchive-juno.list" do
     source "cloudarchive-juno.list.erb"
     owner "root"
     group "root"
+    notifies :run, "execute[apt-get update]", :immediately
 end
 
 template "/etc/apt/sources.list.d/calico.list" do
