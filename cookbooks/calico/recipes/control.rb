@@ -705,29 +705,14 @@ package "calico-control" do
     action :install
 end
 
+# Neutron takes a little while to get started after restart,
+# so don't do anything withit straight after this action.
 cookbook_file "/etc/neutron/plugins/ml2/ml2_conf.ini" do
     mode "0644"
     source "ml2_conf.ini"
     owner "root"
     group "neutron"
     notifies :restart, "service[neutron-server]", :immediately
-end
-
-
-# DEPLOMENT SPECIFIC CONFIGURATION
-
-bash "basic-networks" do
-    action [:run]
-    user "root"
-    environment node["run_env"]
-    code <<-EOH
-    neutron net-create demo-net --shared
-    neutron subnet-create demo-net --name demo-subnet \
-      --gateway 10.28.0.1 10.28.0.0/16
-    neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
-      --gateway fd5f:5d21:845:1c2e:2::1 fd5f:5d21:845:1c2e:2::/80
-    EOH
-    not_if "neutron net-list | grep demo-net"
 end
 
 
@@ -794,4 +779,21 @@ end
 
 service "idmapd" do
     action [:nothing]
+end
+
+
+# DEPLOMENT SPECIFIC CONFIGURATION
+
+bash "basic-networks" do
+    action [:run]
+    user "root"
+    environment node["run_env"]
+    code <<-EOH
+    neutron net-create demo-net --shared
+    neutron subnet-create demo-net --name demo-subnet \
+      --gateway 10.28.0.1 10.28.0.0/16
+    neutron subnet-create --ip-version 6 demo-net --name demo6-subnet \
+      --gateway fd5f:5d21:845:1c2e:2::1 fd5f:5d21:845:1c2e:2::/80
+    EOH
+    not_if "neutron net-list | grep demo-net"
 end
