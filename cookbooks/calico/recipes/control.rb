@@ -247,14 +247,14 @@ ruby_block "environments" do
         # up the environment appropriately.
         ENV["OS_SERVICE_TOKEN"] = node[:calico][:admin_token]
         ENV["OS_SERVICE_ENDPOINT"] = "http://#{node[:fqdn]}:35357/v2.0"
-        ENV["OS_AUTH_URL"] = "http://#{node[:fqdn]}:35357/v2.0"
+        ENV["OS_AUTH_URL"] = "http://#{node[:fqdn]}:5000/v2.0"
         ENV["OS_USERNAME"] = "admin"
         ENV["OS_TENANT_NAME"] = "admin"
         ENV["OS_PASSWORD"] = node[:calico][:admin_password]
         node.set["run_env"] = {
             "OS_SERVICE_TOKEN" => node[:calico][:admin_token],
             "OS_SERVICE_ENDPOINT" => "http://#{node[:fqdn]}:35357/v2.0",
-            "OS_AUTH_URL" => "http://#{node[:fqdn]}:35357/v2.0",
+            "OS_AUTH_URL" => "http://#{node[:fqdn]}:5000/v2.0",
             "OS_USERNAME" => "admin",
             "OS_TENANT_NAME" => "admin",
             "OS_PASSWORD" => node[:calico][:admin_password]
