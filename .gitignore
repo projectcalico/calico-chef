@@ -4,3 +4,5 @@
 # Ignore Chef key files and secrets
 ###
 .chef/*
+# Ignore pycharm config files
+.idea/*
