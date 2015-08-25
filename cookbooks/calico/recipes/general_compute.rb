@@ -51,8 +51,8 @@ template "/etc/apt/preferences" do
     group "root"
     variables({
         package_host: URI.parse(node[:calico][:package_source].split[0]).host
-    notifies :run, "execute[apt-get update]", :immediately
     })
+    notifies :run, "execute[apt-get update]", :immediately
 end
 
 # Configure sysctl so that forwarding is enabled, and router solicitations

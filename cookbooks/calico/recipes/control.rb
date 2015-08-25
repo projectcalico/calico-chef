@@ -3,6 +3,7 @@ require 'uri'
 # Find the BGP neighbors, which is everyone except ourselves.
 bgp_neighbors = search(:node, "role:compute").select { |n| n[:ipaddress] != node[:ipaddress] }
 
+# Tell apt about the Calico repository server.
 template "/etc/apt/sources.list.d/calico.list" do
     mode "0644"
     source "calico.list.erb"
@@ -17,7 +18,13 @@ execute "apt-key-calico" do
     user "root"
     command "curl -L #{node[:calico][:package_key]} | sudo apt-key add -"
     action :nothing
-    notifies :run, "execute[apt-get update]", :immediately
+end
+apt_repository "calico-ppa" do
+    uri node[:calico][:etcd_ppa]
+    distribution node["lsb"]["codename"]
+    components ["main"]
+    keyserver "keyserver.ubuntu.com"
+    key node[:calico][:etcd_ppa_fingerprint]
 end
 template "/etc/apt/preferences" do
     mode "0644"
@@ -27,13 +34,6 @@ template "/etc/apt/preferences" do
     variables({
         package_host: URI.parse(node[:calico][:package_source].split[0]).host
     })
-end
-apt_repository "calico-ppa" do
-    uri node[:calico][:etcd_ppa]
-    distribution node["lsb"]["codename"]
-    components ["main"]
-    keyserver "keyserver.ubuntu.com"
-    key node[:calico][:etcd_ppa_fingerprint]
     notifies :run, "execute[apt-get update]", :immediately
 end
 
