@@ -36,7 +36,13 @@ execute "apt-key-calico" do
     user "root"
     command "curl -L #{node[:calico][:package_key]} | apt-key add -"
     action :nothing
-    notifies :run, "execute[apt-get update]", :immediately
+end
+apt_repository "calico-ppa" do
+    uri node[:calico][:etcd_ppa]
+    distribution node["lsb"]["codename"]
+    components ["main"]
+    keyserver "keyserver.ubuntu.com"
+    key node[:calico][:etcd_ppa_fingerprint]
 end
 template "/etc/apt/preferences" do
     mode "0644"
@@ -45,15 +51,8 @@ template "/etc/apt/preferences" do
     group "root"
     variables({
         package_host: URI.parse(node[:calico][:package_source].split[0]).host
-    })
-end
-apt_repository "calico-ppa" do
-    uri node[:calico][:etcd_ppa]
-    distribution node["lsb"]["codename"]
-    components ["main"]
-    keyserver "keyserver.ubuntu.com"
-    key node[:calico][:etcd_ppa_fingerprint]
     notifies :run, "execute[apt-get update]", :immediately
+    })
 end
 
 # Configure sysctl so that forwarding is enabled, and router solicitations
