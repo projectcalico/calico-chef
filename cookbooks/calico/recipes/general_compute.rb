@@ -29,6 +29,7 @@ template "/etc/apt/preferences" do
     variables({
         package_host: URI.parse(node[:calico][:package_source].split[0]).host
     })
+    notifies :run, "execute[apt-get update]", :immediately
 end
 
 # Install a few needed packages.
