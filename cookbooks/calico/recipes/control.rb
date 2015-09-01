@@ -29,7 +29,6 @@ execute "apt-key-calico" do
     user "root"
     command "curl -L #{node[:calico][:package_key]} | sudo apt-key add -"
     action :nothing
-    notifies :run, "execute[apt-get update]", :immediately
 end
 template "/etc/apt/preferences" do
     mode "0644"
