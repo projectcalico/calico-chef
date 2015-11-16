@@ -121,7 +121,8 @@ package "rabbitmq-server" do
 end
 execute "configure-rabbit" do
     action [:nothing]
-    command "rabbitmqctl change_password guest #{node[:calico][:admin_password]}"
+    command "echo rabbitrabbitrabbit"
+    #command "rabbitmqctl change_password guest #{node[:calico][:admin_password]}"
 end
 
 
